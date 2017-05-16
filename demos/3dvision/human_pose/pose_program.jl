@@ -9,7 +9,7 @@ using Debug
 import JSON
 
 #Note: pyimport calls are *very* slow so you are better off using something else for heavy use case.
-@pyimport scipy.misc as scpy; @pyimport skimage.filter as edge
+@pyimport scipy.misc as scpy; @pyimport skimage.feature as edge
 @pyimport scipy.ndimage.morphology as scp_morph; @pyimport numpy as np
 
 global IMAGE_COUNTER = 0
