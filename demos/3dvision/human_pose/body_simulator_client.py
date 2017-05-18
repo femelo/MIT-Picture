@@ -20,14 +20,14 @@ class BodySimulatorClient:
 		return recdata
 
 	def test(self):
-		if False:
+		if True:
 			data=json.dumps({'cmd':'getBoneNames'})
 			bones = self.execute(data)
 			print '[getBoneNames]: '
 			print bones
 			print '------------------------'
 
-		if False:
+		if True:
 			data=json.dumps({'cmd':'captureViewport'})
 			ret = self.execute(data)
 			print '[captureViewport]: ', ret
@@ -39,18 +39,18 @@ class BodySimulatorClient:
 			ret = self.execute(data)
 			print ret
 			
-			# boneid = bones.index('hip')
-			# data=json.dumps({'cmd':'getBoneRotationEuler','name':'hip','id':boneid})
-			# rot = self.execute(data)
-			# rot = np.array(rot)
-			# print rot
+			boneid = bones.index('hip')
+			data=json.dumps({'cmd':'getBoneRotationEuler','name':'hip','id':boneid})
+			rot = self.execute(data)
+			rot = np.array(rot)
+			print rot
 
-			# boneid = bones.index('LEGS')
-			# data=json.dumps({'cmd':'setBoneLocation','name':'LEGS','id':boneid,'M':[0,1,0]})
-			# ret = self.execute(data)
+			boneid = bones.index('LEGS')
+			data=json.dumps({'cmd':'setBoneLocation','name':'LEGS','id':boneid,'M':[0,1,0]})
+			ret = self.execute(data)
 
 if __name__ == "__main__":
-	simclient = BodySimulatorClient()
+	simclient = BodySimulatorClient(5000)
 	simclient.test()
 
 

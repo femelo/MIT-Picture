@@ -40,6 +40,7 @@ end
 ## blender interface ##
 function render(CMDS)
 	for i=1:length(CMDS)
+		print ("executing ", CMDS[i]["cmd"], "\n")
 		client = connect(5000)
 		cmd = string("\"", CMDS[i]["cmd"] ,"\"");
 		name = "0";
@@ -51,6 +52,7 @@ function render(CMDS)
 		close(client)
 	end
 	#render image
+	print("Rendering\n")
 	client = connect(5000)
 	println(client, "{\"cmd\" : \"captureViewport\"}")
 	fname = JSON.parse(readline(client))
