@@ -38,25 +38,35 @@ function arr2string(arr)
 	return str
 end
 ## blender interface ##
+function send_to_blender(msg)
+	while true
+		ret = ""
+		client = null
+		try
+			client = connect(5000)
+			println(client,msg)
+			ret = readline(client)
+			return ret
+		catch y
+			1
+		end
+	end #while
+end #function
+
 function render(CMDS)
 	for i=1:length(CMDS)
 		print ("executing ", CMDS[i]["cmd"], "\n")
-		client = connect(5000)
 		cmd = string("\"", CMDS[i]["cmd"] ,"\"");
 		name = "0";
 		id = string(CMDS[i]["id"])
 		M = arr2string(CMDS[i]["M"])
 		msg = string("{\"cmd\":", cmd, ", \"name\": ", name, ", \"id\":", id, ", \"M\":",M,"}");
-		println(client,msg)
-		ret = readline(client)
-		close(client)
+		send_to_blender(msg)
 	end
 	#render image
 	print("Rendering\n")
-	client = connect(5000)
-	println(client, "{\"cmd\" : \"captureViewport\"}")
-	fname = JSON.parse(readline(client))
-	close(client)
+	msg = "{\"cmd\" : \"captureViewport\"}"
+	fname = JSON.parse(send_to_blender(msg))
 	rendering = int(scpy.imread(fname))/255.0
 	return rendering
 end
