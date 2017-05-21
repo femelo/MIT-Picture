@@ -16,7 +16,6 @@ def infer(fn):
             break
         except:
             sample_number += 1
-        time.sleep(1)
     os.system("pkill -9 blender")
     os.system("./start_blender_KTH.sh > /dev/null")
     os.system("julia pose_program.jl {} {}".format(fn, sample_directory))
@@ -25,9 +24,9 @@ def infer(fn):
 if len(sys.argv) > 1:
     infer(sys.argv[1])
 
-files = ["examples/small/{:02d}".format(x) for x in range(11)] 
+files = ["examples/small/{:02d}.png".format(x) for x in range(11)] 
 
-#for f in files:
-#    for i in range(15):
-#        infer(f)
-#
+for f in files:
+    for i in range(15):
+        infer(f)
+

@@ -157,6 +157,6 @@ load_program(PROGRAM)
 load_observations(OBSERVATIONS)
 init()
 #run basic inference by cycling through all variables 
-infer(debug_callback,5000,"CYCLE")
+infer(debug_callback,20000,"CYCLE")
 
 
