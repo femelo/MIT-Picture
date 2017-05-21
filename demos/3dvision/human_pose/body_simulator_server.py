@@ -37,7 +37,7 @@ class BodySimulatorServer:
 		return list(self.bones[id].rotation_euler)
 
 	def setBoneRotationEuler(self,name,_id,M):
-		print('setBoneRotationEuler:', M)
+		#print('setBoneRotationEuler:', M)
 		# if self.bones[_id].name != name:
 		# 	print ('[Error: Bone name does not match name in Blender!]')
 		# 	return -1
@@ -71,12 +71,12 @@ class BodySimulatorServer:
 		# self.bones[_id].rotation_euler.rotate_axis('Z',store_Z)
 
 		fname=1#self.captureViewport()
-		print('[END] setBoneRotationEuler:', M)
+		#print('[END] setBoneRotationEuler:', M)
 		return fname
 
 
 	def setBoneLocation(self,name,id,M):
-		print('setBoneLocation')
+		#print('setBoneLocation')
 		# if self.bones[id].name != name:
 		# 	print ('[Error: Bone name does not match name in Blender!]')
 		# 	return -1
@@ -90,7 +90,7 @@ class BodySimulatorServer:
 		return fname
 
 	def setGlobalAffine(self,name,id,M):
-		print('setGlobalAffine:', M)
+		#print('setGlobalAffine:', M)
 		if M[0] != 'None' and M[0] != self.rig.scale[0]:
 			self.rig.scale=(M[0],M[0],M[0])
 
@@ -186,7 +186,7 @@ class BodySimulatorServer:
 
 			data = sockfd.recv(10240)
 			data = data.decode("utf-8")
-			print(data)
+			#print(data)
 			if len(data) > 0 and data != None:
 				ret = self.process(data)
 				#first send number of bytes

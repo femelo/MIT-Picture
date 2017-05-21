@@ -21,6 +21,9 @@ OBS_IMAGE = edge.canny(OBS_IMAGE, sigma=1.0)
 dist_obs = pyeval("dt(npinvert(im))", npinvert=np.invert, dt=scp_morph.distance_transform_edt, im=OBS_IMAGE)
 OBSERVATIONS["dist_obs"] = dist_obs
 
+sample_number = ARGS[1]
+mkdir("samples_$sample_number")
+
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
 	str = "["
@@ -55,7 +58,7 @@ end #function
 
 function render(CMDS)
 	for i=1:length(CMDS)
-		print ("executing ", CMDS[i]["cmd"], "\n")
+		#print ("executing ", CMDS[i]["cmd"], "\n")
 		cmd = string("\"", CMDS[i]["cmd"] ,"\"");
 		name = "0";
 		id = string(CMDS[i]["id"])
@@ -64,7 +67,7 @@ function render(CMDS)
 		send_to_blender(msg)
 	end
 	#render image
-	print("Rendering\n")
+	#print("Rendering\n")
 	msg = "{\"cmd\" : \"captureViewport\"}"
 	fname = JSON.parse(send_to_blender(msg))
 	rendering = int(scpy.imread(fname))/255.0
@@ -79,38 +82,38 @@ function PROGRAM()
 
 	CMDS = Dict(); cnt=1;
 
-	arm_elbowR_rz = Uniform(0,360,1,1)
+	arm_elbowR_rz = block("arm_elbowR_rz", Uniform(0,360,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneRotationEuler", "name"=>0, "id"=>bone_index["arm_elbow_R"], "M"=>[None,None,arm_elbowR_rz]};cnt+=1;
 
-	arm_elbowR_dx = Uniform(-1,0,1,1)
-	arm_elbowR_dy = Uniform(-1,1,1,1)
-	arm_elbowR_dz = Uniform(-1,1,1,1)
+	arm_elbowR_dx = block("arm_elbowR_dx", Uniform(-1,0,1,1))
+	arm_elbowR_dy = block("arm_elbowR_dy", Uniform(-1,1,1,1))
+	arm_elbowR_dz = block("arm_elbowR_dz", Uniform(-1,1,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["arm_elbow_R"], "M"=>[arm_elbowR_dx,arm_elbowR_dy,arm_elbowR_dz]};cnt+=1;
 
-	arm_elbowL_rz = Uniform(0,360,1,1)
+	arm_elbowL_rz = block("arm_elbowL_rz", Uniform(0,360,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneRotationEuler", "name"=>0, "id"=>bone_index["arm_elbow_L"], "M"=>[None,None,arm_elbowL_rz]};cnt+=1;
 
-	arm_elbowL_dx = Uniform(0,1,1,1)
-	arm_elbowL_dy = Uniform(-1,1,1,1)
-	arm_elbowL_dz = Uniform(-1,1,1,1)
+	arm_elbowL_dx = block("arm_elbowL_dx", Uniform(0,1,1,1))
+	arm_elbowL_dy = block("arm_elbowL_dy", Uniform(-1,1,1,1))
+	arm_elbowL_dz = block("arm_elbowL_dz", Uniform(-1,1,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["arm_elbow_L"], "M"=>[arm_elbowL_dx,arm_elbowL_dy,arm_elbowL_dz]};cnt+=1;
 
-	hip_dz = Uniform(-0.35,0,1,1)
+	hip_dz = block("hip_dz", Uniform(-0.35,0,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["hip"], "M"=>[None,None,hip_dz]};cnt+=1;
 
-	heel_L_dx = Uniform(-0.1,0.45,1,1)
-	heel_L_dy = Uniform(0,0.15,1,1)
-	heel_L_dz = Uniform(-0.2,0.2,1,1)
+	heel_L_dx = block("heel_L_dx", Uniform(-0.1,0.45,1,1))
+	heel_L_dy = block("heel_L_dy", Uniform(0,0.15,1,1))
+	heel_L_dz = block("heel_L_dz", Uniform(-0.2,0.2,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["heel_L"], "M"=>[heel_L_dx,heel_L_dy,heel_L_dz]};cnt+=1;
 
-	heel_R_dx = Uniform(-0.45,0.1,1,1)
-	heel_R_dy = Uniform(0,0.15,1,1)
-	heel_R_dz = Uniform(-0.2,0.2,1,1)
+	heel_R_dx = block("heel_R_dx", Uniform(-0.45,0.1,1,1))
+	heel_R_dy = block("heel_R_dy", Uniform(0,0.15,1,1))
+	heel_R_dz = block("heel_R_dz", Uniform(-0.2,0.2,1,1))
 	CMDS[cnt]={"cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["heel_R"], "M"=>[heel_R_dx,heel_R_dy,heel_R_dz]};cnt+=1;
 
-	global_scale = Normal(0.98,0.01,1,1)
-	global_translate_x = Uniform(-2.599287271499634-1,-2.599287271499634+1,1,1)
-	global_translate_z = Uniform(-2.5635364055633545,-2.5635364055633545+0.5,1,1)
+	global_scale = block("global_scale", Normal(0.98,0.01,1,1))
+	global_translate_x = block("global_translate_x", Uniform(-2.599287271499634-1,-2.599287271499634+1,1,1))
+	global_translate_z = block("global_translate_z", Uniform(-2.5635364055633545,-2.5635364055633545+0.5,1,1))
 	global_rotate_z = 0#Uniform(-1,1,1,1)
 
 	camera = [global_scale, None, None, global_rotate_z, global_translate_x, None, global_translate_z]
@@ -136,7 +139,10 @@ end
 function debug_callback(TRACE)
 	global IMAGE_COUNTER
 	println("LOGL=>", TRACE["ll"])
-	scpy.imsave(string("samples/sample_",string(IMAGE_COUNTER),".png",), TRACE["PROGRAM_OUTPUT"])
+	scpy.imsave(string("samples_$sample_number/sample_",string(IMAGE_COUNTER),".png",), TRACE["PROGRAM_OUTPUT"])
+	open(string("samples_$sample_number/trace_",string(IMAGE_COUNTER),".txt",), "a") do f
+		write(f, JSON.json(sort(collect((TRACE["RC"])))))
+	end
 	IMAGE_COUNTER += 1
 end
 
