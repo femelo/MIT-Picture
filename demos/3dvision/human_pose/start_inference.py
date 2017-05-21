@@ -24,7 +24,7 @@ def infer(fn):
 if len(sys.argv) > 1:
     infer(sys.argv[1])
 
-files = ["examples/small/{:02d}.png".format(x) for x in range(11)] 
+files = ["examples/small/{:02d}.png".format(x) for x in range(1,11)] 
 
 for f in files:
     for i in range(15):
