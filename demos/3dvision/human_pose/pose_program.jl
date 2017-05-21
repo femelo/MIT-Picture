@@ -146,6 +146,7 @@ function debug_callback(TRACE)
 	open(string(sample_directory * "/trace_",lpad(IMAGE_COUNTER, 5, 0),".txt",), "a") do f
 		d = deepcopy(TRACE["RC"])
 		d["LOGL"] = TRACE["ll"]
+		d["ITER"] = TRACE["iter"]
 		write(f, JSON.json(d))
 	end
 	IMAGE_COUNTER += 1
