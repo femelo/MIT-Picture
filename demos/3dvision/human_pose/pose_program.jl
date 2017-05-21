@@ -14,15 +14,18 @@ import JSON
 
 global IMAGE_COUNTER = 0
 OBSERVATIONS=Dict()
-OBS_FNAME = "test.png" #observed image
+OBS_FNAME = ARGS[1] #observed image
 OBS_IMAGE = int(scpy.imread(OBS_FNAME,true))/255.0
 OBS_IMAGE = edge.canny(OBS_IMAGE, sigma=1.0)
 #calculate and store distance transform 
 dist_obs = pyeval("dt(npinvert(im))", npinvert=np.invert, dt=scp_morph.distance_transform_edt, im=OBS_IMAGE)
 OBSERVATIONS["dist_obs"] = dist_obs
 
-sample_number = ARGS[1]
-mkdir("samples_$sample_number")
+#Many iterations
+sample_directory = ARGS[2]
+#sample_directory = string("samples_", split(OBS_FNAME, '/')[end], "_", sample_number,)
+#mkdir(sample_directory)
+mkdir(sample_directory * "/tmp/")
 
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
@@ -139,17 +142,19 @@ end
 function debug_callback(TRACE)
 	global IMAGE_COUNTER
 	println("LOGL=>", TRACE["ll"])
-	scpy.imsave(string("samples_$sample_number/sample_",string(IMAGE_COUNTER),".png",), TRACE["PROGRAM_OUTPUT"])
-	open(string("samples_$sample_number/trace_",string(IMAGE_COUNTER),".txt",), "a") do f
-		write(f, JSON.json(sort(collect((TRACE["RC"])))))
+	scpy.imsave(string(sample_directory * "/sample_",string(IMAGE_COUNTER),".png",), TRACE["PROGRAM_OUTPUT"])
+	open(string(sample_directory * "/trace_",string(IMAGE_COUNTER),".txt",), "a") do f
+		write(f, JSON.json(TRACE["RC"]))
 	end
 	IMAGE_COUNTER += 1
 end
+
+send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/tmp/\"}")
 
 load_program(PROGRAM)
 load_observations(OBSERVATIONS)
 init()
 #run basic inference by cycling through all variables 
-infer(debug_callback,20000,"CYCLE")
+infer(debug_callback,5000,"CYCLE")
 
 

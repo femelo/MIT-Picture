@@ -32,15 +32,15 @@ class BodySimulatorServer:
 
 	def getBoneRotationEuler(self,name,id):
 		# if self.bones[id].name != name:
-		# 	print ('[Error: Bone name does not match name in Blender!]')
-		# 	raise
+		#	print ('[Error: Bone name does not match name in Blender!]')
+		#	raise
 		return list(self.bones[id].rotation_euler)
 
 	def setBoneRotationEuler(self,name,_id,M):
 		#print('setBoneRotationEuler:', M)
 		# if self.bones[_id].name != name:
-		# 	print ('[Error: Bone name does not match name in Blender!]')
-		# 	return -1
+		#	print ('[Error: Bone name does not match name in Blender!]')
+		#	return -1
 		self.bones[_id].rotation_mode = 'XYZ'
 
 
@@ -60,11 +60,11 @@ class BodySimulatorServer:
 		# self.bones[_id].rotation_euler.rotate_axis('Z',-store_Z)
 
 		# if M[0] != 'None':
-		# 	store_X = math.radians(M[0])
+		#	store_X = math.radians(M[0])
 		# if M[1] != 'None':
-		# 	store_Y = math.radians(M[1])
+		#	store_Y = math.radians(M[1])
 		# if M[2] != 'None':
-		# 	store_Z = math.radians(M[2])
+		#	store_Z = math.radians(M[2])
 
 		# self.bones[_id].rotation_euler.rotate_axis('X',store_X)
 		# self.bones[_id].rotation_euler.rotate_axis('Y',store_Y)
@@ -78,8 +78,8 @@ class BodySimulatorServer:
 	def setBoneLocation(self,name,id,M):
 		#print('setBoneLocation')
 		# if self.bones[id].name != name:
-		# 	print ('[Error: Bone name does not match name in Blender!]')
-		# 	return -1
+		#	print ('[Error: Bone name does not match name in Blender!]')
+		#	return -1
 		if M[0] != 'None' and M[0] != self.bones[id].location[0]: 
 			self.bones[id].location[0]=M[0]
 		if M[1] != 'None' and M[1] != self.bones[id].location[1]: 
@@ -111,11 +111,11 @@ class BodySimulatorServer:
 		# self.rig.rotation_euler.rotate_axis('Z',-store_Z)
 
 		# if M[1] != 'None':
-		# 	store_X = math.radians(M[1])
+		#	store_X = math.radians(M[1])
 		# if M[2] != 'None':
-		# 	store_Y = math.radians(M[2])
+		#	store_Y = math.radians(M[2])
 		# if M[3] != 'None':
-		# 	store_Z = math.radians(M[3])
+		#	store_Z = math.radians(M[3])
 			
 		# self.rig.rotation_euler.rotate_axis('X',store_X)
 		# self.rig.rotation_euler.rotate_axis('Y',store_Y)
@@ -144,6 +144,9 @@ class BodySimulatorServer:
 		bpy.ops.render.render( write_still=True )
 		self.capture_cnt+=1
 		return bpy.context.scene.render.filepath
+
+	def setRootDir(self, rootdir):
+		self.rootdir = rootdir
 
 
 	def process(self,data):
@@ -176,6 +179,8 @@ class BodySimulatorServer:
 			ret = self.captureViewport_Texture()
 		if cmd == 'setGlobalAffine':
 			ret = self.setGlobalAffine(data['name'],data['id'],data['M'])
+		if cmd == 'setRootDir':
+			ret = self.setRootDir(data['rootdir'])
 		return json.dumps(ret)
 
 	def run(self):
