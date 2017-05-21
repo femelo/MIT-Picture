@@ -142,9 +142,11 @@ end
 function debug_callback(TRACE)
 	global IMAGE_COUNTER
 	println("LOGL=>", TRACE["ll"])
-	scpy.imsave(string(sample_directory * "/sample_",string(IMAGE_COUNTER),".png",), TRACE["PROGRAM_OUTPUT"])
-	open(string(sample_directory * "/trace_",string(IMAGE_COUNTER),".txt",), "a") do f
-		write(f, JSON.json(TRACE["RC"]))
+	scpy.imsave(string(sample_directory * "/sample_",lpad(IMAGE_COUNTER, 5, 0),".png",), TRACE["PROGRAM_OUTPUT"])
+	open(string(sample_directory * "/trace_",lpad(IMAGE_COUNTER, 5, 0),".txt",), "a") do f
+		d = deepcopy(TRACE["RC"])
+		d["LOGL"] = TRACE["ll"]
+		write(f, JSON.json(d))
 	end
 	IMAGE_COUNTER += 1
 end
