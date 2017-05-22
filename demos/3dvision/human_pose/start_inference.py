@@ -2,7 +2,7 @@
 import os,sys
 import time
 
-def infer(fn):
+def infer(fn, port=5000):
     sample_number = 0
     try:
         os.mkdir("samples/{}".format(fn.split('/')[-1]))
@@ -16,17 +16,18 @@ def infer(fn):
             break
         except:
             sample_number += 1
-    os.system("pkill -9 blender")
-    os.system("./start_blender_KTH.sh > /dev/null")
-    os.system("julia pose_program.jl {} {}".format(fn, sample_directory))
-    os.system("pkill -9 blender")
+    os.system("pkill -f \"blender.*{}\"".format(port))
+    os.system("./start_blender_KTH.sh {} > /dev/null".format(port))
+    os.system("julia pose_program.jl {} {} {}".format(fn, sample_directory, port))
+    os.system("pkill -f \"blender.*{}\"".format(port))
 
 if len(sys.argv) > 1:
     infer(sys.argv[1])
 
-files = ["examples/small/{:02d}.png".format(x) for x in range(1,11)] 
+files = ["examples/small/{:02d}.png".format(x) for x in range(2,11)] 
 
 for f in files:
-    for i in range(15):
-        infer(f)
+    for p in range(5000, 5005):
+        for i in range(2):
+            infer(f,p)
 

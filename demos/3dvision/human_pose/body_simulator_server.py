@@ -15,7 +15,7 @@ class BodySimulatorServer:
 		self.bones = self.pose.bones
 		self.capture_cnt = 0
 		self.HOST=''
-		self.PORT=5000#int(sys.argv[4])#50014
+		self.PORT=int(sys.argv[4])#5000
 		self.CONNECTION_LIST=[]
 		self.connect()
 

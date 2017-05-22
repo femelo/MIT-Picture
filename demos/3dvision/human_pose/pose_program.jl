@@ -51,7 +51,7 @@ function send_to_blender(msg)
 		ret = ""
 		client = null
 		try
-			client = connect(5000)
+			client = connect(ARGS[3])
 			println(client,msg)
 			ret = readline(client)
 			return ret
