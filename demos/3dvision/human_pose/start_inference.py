@@ -34,7 +34,7 @@ def thread_run(port):
 
 import threading
 threads = []
-for p in range(5000, 5006):
+for p in range(5000, 5003):
     t = threading.Thread(target=thread_run, args=(p,))
     threads.append(t)
     t.start()

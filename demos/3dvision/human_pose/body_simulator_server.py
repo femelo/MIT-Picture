@@ -16,6 +16,7 @@ class BodySimulatorServer:
 		self.capture_cnt = 0
 		self.HOST=''
 		self.PORT=int(sys.argv[4])#5000
+		print ("Listening to port {}".format(self.PORT))
 		self.CONNECTION_LIST=[]
 		self.connect()
 

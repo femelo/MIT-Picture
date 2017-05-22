@@ -26,6 +26,7 @@ sample_directory = ARGS[2]
 #sample_directory = string("samples_", split(OBS_FNAME, '/')[end], "_", sample_number,)
 #mkdir(sample_directory)
 mkdir(sample_directory * "/tmp/")
+port = parse(Int, ARGS[3])
 
 inference = "MH_SingleSite"
 
@@ -51,7 +52,7 @@ function send_to_blender(msg)
 		ret = ""
 		client = null
 		try
-			client = connect(ARGS[3])
+			client = connect(port)
 			println(client,msg)
 			ret = readline(client)
 			return ret
@@ -159,6 +160,7 @@ function debug_callback(TRACE)
 	IMAGE_COUNTER += 1
 end
 
+print(string("Connecting to port ", port,"\n",))
 send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/tmp/\"}")
 
 load_program(PROGRAM)
