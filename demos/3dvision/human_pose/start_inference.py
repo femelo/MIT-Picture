@@ -12,6 +12,7 @@ def infer(fn, port=5000):
         try:
             sample_directory = "samples/{}/{:04d}".format(fn.split('/')[-1], sample_number)
             os.mkdir(sample_directory)
+            os.system("cp {} {}/original.png".format(fn, sample_directory))
             print (sample_directory)
             break
         except:
