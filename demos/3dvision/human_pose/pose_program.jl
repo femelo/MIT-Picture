@@ -27,6 +27,8 @@ sample_directory = ARGS[2]
 #mkdir(sample_directory)
 mkdir(sample_directory * "/tmp/")
 
+inference = "Gibbs"
+
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
 	str = "["
@@ -146,7 +148,12 @@ function debug_callback(TRACE)
 	open(string(sample_directory * "/trace_",lpad(IMAGE_COUNTER, 5, 0),".txt",), "a") do f
 		d = deepcopy(TRACE["RC"])
 		d["LOGL"] = TRACE["ll"]
-		d["ITER"] = TRACE["iter"]
+		try
+			d["ITER"] = TRACE["iter"]
+		catch e
+			1
+		end
+		d["INFERENCE"] = inference
 		write(f, JSON.json(d))
 	end
 	IMAGE_COUNTER += 1
@@ -158,6 +165,6 @@ load_program(PROGRAM)
 load_observations(OBSERVATIONS)
 init()
 #run basic inference by cycling through all variables 
-infer(debug_callback,20000,"CYCLE")
+infer(debug_callback,20000,"CYCLE",inference)
 
 
