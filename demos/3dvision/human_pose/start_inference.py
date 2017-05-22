@@ -17,10 +17,10 @@ def infer(fn, port=5000):
             break
         except:
             sample_number += 1
-    os.system("pkill -f \"blender.*{}\"".format(port))
+    os.system("pkill -f -9 \"blender.*{}\"".format(port))
     os.system("./start_blender_KTH.sh {} > /dev/null".format(port))
     os.system("julia pose_program.jl {} {} {}".format(fn, sample_directory, port))
-    os.system("pkill -f \"blender.*{}\"".format(port))
+    os.system("pkill -f -9 \"blender.*{}\"".format(port))
 
 if len(sys.argv) > 1:
     infer(sys.argv[1])
