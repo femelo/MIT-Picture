@@ -27,7 +27,7 @@ sample_directory = ARGS[2]
 #mkdir(sample_directory)
 mkdir(sample_directory * "/tmp/")
 
-inference = "Gibbs"
+inference = "MH_SingleSite"
 
 ################### HELPER FUNCTION ###############
 function arr2string(arr)

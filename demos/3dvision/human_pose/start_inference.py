@@ -25,10 +25,18 @@ def infer(fn, port=5000):
 if len(sys.argv) > 1:
     infer(sys.argv[1])
 
-files = ["examples/small/{:02d}.png".format(x) for x in range(2,11)] 
+def thread_run(port):
+    files = ["examples/small/{:02d}.png".format(x) for x in range(2,11)] 
 
-for f in files:
-    for p in range(5000, 5005):
-        for i in range(2):
-            infer(f,p)
+    for f in files:
+        for i in range(1):
+            infer(f,port)
+
+import threading
+threads = []
+for p in range(5000, 5006):
+    t = threading.Thread(target=thread_run, args=(p,))
+    threads.append(t)
+    t.start()
+
 
