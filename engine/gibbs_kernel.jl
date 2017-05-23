@@ -4,7 +4,7 @@ using Debug
 using Distributions
 using NumericExtensions
 
-@debug function gibbs_propose(names, debug_callback)
+function gibbs_propose(names, debug_callback)
 
 	params.CURRENT_TRACE = deepcopy(params.TRACE)
 
