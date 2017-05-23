@@ -1,8 +1,8 @@
 # Usage: (1) run start_blender_KTH.sh (initializes blender interface)
-#		 (2) julia pose_program.jl
+#		 (2) julia pose_program.jl 
 
-# DESCRIPTION: Generative 3D human pose estimation
-# Given a single image of a human, the model will compute the most likely 3D pose.
+# DESCRIPTION: Generative 3D human pose estimation 
+# Given a single image of a human, the model will compute the most likely 3D pose. 
 
 include("../../../engine/picture.jl")
 using Debug
@@ -17,7 +17,7 @@ OBSERVATIONS=Dict()
 OBS_FNAME = ARGS[1] #observed image
 OBS_IMAGE = int(scpy.imread(OBS_FNAME,true))/255.0
 OBS_IMAGE = edge.canny(OBS_IMAGE, sigma=1.0)
-#calculate and store distance transform
+#calculate and store distance transform 
 dist_obs = pyeval("dt(npinvert(im))", npinvert=np.invert, dt=scp_morph.distance_transform_edt, im=OBS_IMAGE)
 OBSERVATIONS["dist_obs"] = dist_obs
 
@@ -28,7 +28,7 @@ sample_directory = ARGS[2]
 mkdir(sample_directory * "/tmp/")
 port = parse(Int, ARGS[3])
 
-inference = "SGD"
+inference = "Gibbs"
 
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
@@ -81,9 +81,9 @@ function render(CMDS)
 end
 
 ################### PROBABILISTIC CODE ###############
-function PROGRAM()
+function PROGRAM()	
 	LINE=Stack(Int);FUNC=Stack(Int);LOOP=Stack(Int)
-
+	
 	bone_index = {"arm_elbow_R" => 9, "arm_elbow_L" => 7, "hip" => 1, "heel_L" => 37, "heel_R" => 29};
 
 	CMDS = Dict(); cnt=1;
@@ -166,5 +166,7 @@ send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/tmp
 load_program(PROGRAM)
 load_observations(OBSERVATIONS)
 init()
-#run basic inference by cycling through all variables
+#run basic inference by cycling through all variables 
 infer(debug_callback,350,"CYCLE",inference)
+
+
