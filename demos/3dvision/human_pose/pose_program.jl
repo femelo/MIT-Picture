@@ -28,7 +28,7 @@ sample_directory = ARGS[2]
 mkdir(sample_directory * "/tmp/")
 port = parse(Int, ARGS[3])
 
-inference = "MH_SingleSite"
+inference = "Gibbs"
 
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
