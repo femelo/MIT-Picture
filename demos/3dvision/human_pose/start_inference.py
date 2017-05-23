@@ -26,14 +26,17 @@ if len(sys.argv) > 1:
     infer(sys.argv[1])
 
 def thread_run(port):
-    files = ["examples/small/{:02d}.png".format(x) for x in range(2,11)] 
+    while True:
+        files = ["examples/small/{:02d}.png".format(x) for x in [12,11,0,1]] 
 
-    for f in files:
-        for i in range(1):
-            infer(f,port)
+        for f in files:
+            for i in range(1):
+                infer(f,port)
 
 import threading
 threads = []
+os.system("pkill -9 \"julia pose\"")
+os.system("pkill -9 blender")
 for p in range(5000, 5003):
     t = threading.Thread(target=thread_run, args=(p,))
     threads.append(t)
