@@ -27,7 +27,7 @@ if len(sys.argv) > 1:
 
 def thread_run(port):
     while True:
-        files = ["examples/small/{:02d}.png".format(x) for x in range(13)] 
+        files = ["examples/small/{:02d}.png".format(x) for x in reversed(range(13))] 
 
         for f in files:
             for i in range(1):
@@ -39,7 +39,7 @@ our_pid = os.getpid()
 other_pids = set(map(int, subprocess.check_output("pgrep -f start_inference.py", shell=True).split(b"\n")[:-1]))
 other_pids.remove(our_pid)
 
-os.system("kill -9 {}".format(" ".join(other_pids)))
+if other_pids: os.system("kill -9 {}".format(" ".join(map(str, other_pids))))
 os.system("pkill -9 -f \"julia pose\"")
 os.system("pkill -9 blender")
 for p in range(5000, 5003):
