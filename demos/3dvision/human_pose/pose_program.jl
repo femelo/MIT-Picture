@@ -23,7 +23,7 @@ OBSERVATIONS["dist_obs"] = dist_obs
 
 obs_erp = Normal
 obs_a = 0
-obs_b = 0.35
+obs_b = 0.07
 
 #Many iterations
 sample_directory = ARGS[2]
