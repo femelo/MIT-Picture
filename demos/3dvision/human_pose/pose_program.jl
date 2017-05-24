@@ -21,6 +21,10 @@ OBS_IMAGE = edge.canny(OBS_IMAGE, sigma=1.0)
 dist_obs = pyeval("dt(npinvert(im))", npinvert=np.invert, dt=scp_morph.distance_transform_edt, im=OBS_IMAGE)
 OBSERVATIONS["dist_obs"] = dist_obs
 
+obs_erp = Normal
+obs_a = 0
+obs_b = 0.35
+
 #Many iterations
 sample_directory = ARGS[2]
 #sample_directory = string("samples_", split(OBS_FNAME, '/')[end], "_", sample_number,)
@@ -136,7 +140,7 @@ function PROGRAM()
 	D = pyeval("npmultiply(dist_obs[valid_indxs], ren[valid_indxs])",npmultiply=np.multiply, dist_obs=OBSERVATIONS["dist_obs"],valid_indxs=valid_indxs, ren=edgemap)
 
 	#constraint to observation
-	observe(0,Normal(0,0.35),D)
+	observe(0,obs_erp(obs_a,obs_b),D)
 
 	return rendering
 end
@@ -149,6 +153,11 @@ function debug_callback(TRACE)
 	open(string(sample_directory * "/trace_",lpad(IMAGE_COUNTER, 5, 0),".txt",), "a") do f
 		d = deepcopy(TRACE["RC"])
 		d["LOGL"] = TRACE["ll"]
+		d["OBSERVED"] = Dict()
+		d["OBSERVED"]["ERP"] = obs_erp
+		d["OBSERVED"]["a"] = obs_a
+		d["OBSERVED"]["b"] = obs_b
+
 		try
 			d["ITER"] = TRACE["iter"]
 		catch e

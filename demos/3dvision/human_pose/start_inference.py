@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os,sys
+import os,sys,subprocess
 import time
 
 def infer(fn, port=5000):
@@ -35,6 +35,11 @@ def thread_run(port):
 
 import threading
 threads = []
+our_pid = os.getpid()
+other_pids = set(map(int, subprocess.check_output("pgrep -f start_inference.py", shell=True).split(b"\n")[:-1]))
+other_pids.remove(our_pid)
+
+os.system("kill -9 {}".format(" ".join(other_pids)))
 os.system("pkill -9 -f \"julia pose\"")
 os.system("pkill -9 blender")
 for p in range(5000, 5003):
