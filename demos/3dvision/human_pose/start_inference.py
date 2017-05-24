@@ -27,7 +27,7 @@ if len(sys.argv) > 1:
 
 def thread_run(port):
     while True:
-        files = ["examples/small/{:02d}.png".format(x) for x in reversed(range(13))] 
+        files = ["examples/small/{:02d}.png".format(x) for x in [12, 0, 4, 7, 8, 11]] 
 
         for f in files:
             for i in range(1):
