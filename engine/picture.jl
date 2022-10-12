@@ -220,6 +220,7 @@ function infer( debug_callback="", iterations = 100, group_name="", inference="M
 				new_X,new_logl, F, R = sample_from_proposal(params.TRACE,chosen_rv,inference)
 
 				params.NEW_TRACE = deepcopy(params.TRACE)
+				params.NEW_TRACE["iter"] = iters
 				params.NEW_TRACE["RC"][chosen_rv]["X"]=new_X	
 				params.NEW_TRACE["RC"][chosen_rv]["logl"]=new_logl
 			else
