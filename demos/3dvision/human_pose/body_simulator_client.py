@@ -15,7 +15,7 @@ class BodySimulatorClient:
 	def execute(self,data):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.connect((self.HOST, self.PORT))
-		self.sock.send(data)
+		self.sock.send(data.encode('utf-8'))
 		recdata = self.sock.recv(10240)
 		recdata = recdata.decode("utf-8")
 		recdata = json.loads(recdata)

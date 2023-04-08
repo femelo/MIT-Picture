@@ -30,7 +30,7 @@ obs_a = 0
 obs_b = 0.07
 
 #Many iterations
-sample_directory = "/home/flavio/1_Research/Probabilistic_Programming/mit-picture/demos/3dvision/human_pose/samples"
+sample_directory = "/home/flavio/1_Research/Probabilistic_Programming"
 #sample_directory = ARGS[2]
 #sample_directory = string("samples_", split(OBS_FNAME, '/')[end], "_", sample_number,)
 #mkdir(sample_directory)
