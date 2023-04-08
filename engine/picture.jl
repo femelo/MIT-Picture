@@ -1,28 +1,28 @@
 
 # module Picture
 
-if isdefined(:struct) == false
-type struct
-	PROGRAM
-	TRACE_EXTERN
-	TRACE
-	NEW_TRACE
-	CURRENT_TRACE
-	LOOP_LIST
-	TAST
-	OBSERVATIONS
-	USER_DEFINED
-	TAPE
-end
+if isdefined(Base, :Params) == false
+	mutable struct Params
+		PROGRAM
+		TRACE_EXTERN
+		TRACE
+		NEW_TRACE
+		CURRENT_TRACE
+		LOOP_LIST
+		TAST
+		OBSERVATIONS
+		USER_DEFINED
+		TAPE
+	end
 end
 
-global params = struct(NaN,NaN,Dict(), Dict(),Dict(),Dict(), NaN,NaN, Dict(), Dict())
+global parameters = Params(NaN, NaN, Dict(), Dict(), Dict(), Dict(), NaN, NaN, Dict(), Dict())
 
 global GRADIENT_CALC = false
 
 
 using Distributions
-using Debug
+using Debugger
 using DataStructures
 
 using PyCall
@@ -64,20 +64,23 @@ include("gibbs_kernel.jl")
 
 #################### HELPER FUNCTIONS ####################
 #Appending to arrays
-myappend{T}(v::Vector{T}, x::T) = [v..., x]
+myappend(v::Vector{T}, x::T) where {T} = [v..., x]
 
 
 function check_if_random_choice(expression)
 	str_exp = string(expression)
-	if search(str_exp,"observe") != 0:-1
+	# if search(str_exp,"observe") != 0:-1
+	if occursin("observe", str_exp)
 		return false
 	end
 	
-	if search(str_exp, "block") != 0:-1
+	# if search(str_exp, "block") != 0:-1
+	if occursin("block", str_exp)
 		return true
 	end
 
-	if search(str_exp, "memoize") != 0:-1
+	# if search(str_exp, "memoize") != 0:-1
+	if occursin("memoize", str_exp)
 		return true
 	end
 
@@ -89,11 +92,11 @@ function check_if_random_choice(expression)
 	# 	ret = false
 	# end
 
-	ret = false
+	local ret = false
 	try	input_erp = string(expression.args[2].args[1]) #string(expression.args[2].args[2].args[2].args[1])
 		ERPS = ["DiscreteUniform", "Bernoulli","Beta","Poisson", "Uniform","Normal","Multinomial", "Gamma", "MvNormal"]
 		
-		for i=1:length(ERPS)
+		for i=eachindex(ERPS)
 			#ret = ret | (match(Regex(ERPS[i]),expression) != Nothing())
 			ret = ret | (ERPS[i] == input_erp)
 			if ret == true
@@ -111,7 +114,7 @@ end
 function is_theta_equal(theta_c, theta_d) #theta_c can have symbols
 	equal = false
 
-	for ii=1:length(theta_c)
+	for ii=eachindex(theta_c)
 		if typeof(theta_c[ii]) == Symbol
 			theta_c[ii] = eval(theta_c[ii])
 		end
@@ -122,86 +125,86 @@ end
 
 function trace_update(TAST)
 
-	params.CURRENT_TRACE["ll"] = 0; params.CURRENT_TRACE["ll_fresh"] = 0; params.CURRENT_TRACE["ll_stale"] = 0;
-	params.CURRENT_TRACE["ACTIVE_K"] = Dict()
+	parameters.CURRENT_TRACE["ll"] = 0; parameters.CURRENT_TRACE["ll_fresh"] = 0; parameters.CURRENT_TRACE["ll_stale"] = 0;
+	parameters.CURRENT_TRACE["ACTIVE_K"] = Dict()
 
-	params.CURRENT_TRACE["PROGRAM_OUTPUT"] = eval(TAST[1].args[3])
+	parameters.CURRENT_TRACE["PROGRAM_OUTPUT"] = eval(TAST[1].code)
 
-	all_choices = unique(append!(collect(keys(params.CURRENT_TRACE["RC"])),collect(keys(params.CURRENT_TRACE["ACTIVE_K"]))))
+	all_choices = unique(append!(collect(keys(parameters.CURRENT_TRACE["RC"])),collect(keys(parameters.CURRENT_TRACE["ACTIVE_K"]))))
 	for name in all_choices
-		if haskey(params.CURRENT_TRACE["ACTIVE_K"], name) == false #inactive
-			ERP = params.CURRENT_TRACE["RC"][name]["ERP"]
-			theta_d = params.CURRENT_TRACE["RC"][name]["theta_c"]
-			VAL = params.CURRENT_TRACE["RC"][name]["X"]
-			params.CURRENT_TRACE["ll_stale"]+=logscore_erp(ERP_CREATE(ERP,theta_d),VAL, theta_d)
-			delete!(params.CURRENT_TRACE,name)
+		if haskey(parameters.CURRENT_TRACE["ACTIVE_K"], name) == false #inactive
+			ERP = parameters.CURRENT_TRACE["RC"][name]["ERP"]
+			theta_d = parameters.CURRENT_TRACE["RC"][name]["theta_c"]
+			VAL = parameters.CURRENT_TRACE["RC"][name]["X"]
+			parameters.CURRENT_TRACE["ll_stale"]+=logscore_erp(ERP_CREATE(ERP,theta_d),VAL, theta_d)
+			delete!(parameters.CURRENT_TRACE,name)
 		end
 	end
 
-	if params.CURRENT_TRACE["PROGRAM_OUTPUT"] == "OVERFLOW_ERROR"
-		params.CURRENT_TRACE["ll"]=-1e200
+	if parameters.CURRENT_TRACE["PROGRAM_OUTPUT"] == "OVERFLOW_ERROR"
+		parameters.CURRENT_TRACE["ll"]=-1e200
 	end
 end
 
 function load_program(PROGRAM)
-	params.PROGRAM = PROGRAM
+	parameters.PROGRAM = PROGRAM
 end
 
 function load_observations(OBSERVATIONS)
-	params.OBSERVATIONS = OBSERVATIONS
+	parameters.OBSERVATIONS = OBSERVATIONS
 end
 
 function initialize_trace_extern(funcFtr,args)
-	params.TRACE_EXTERN = funcFtr(args)
+	parameters.TRACE_EXTERN = funcFtr(args)
 end
 
 function init()
-	AST=code_lowered(params.PROGRAM,())
+	AST=code_lowered(parameters.PROGRAM, ())
 	#AST=code_lowered(PROGRAM,(Dict{Any,Any},))
-	params.TAST = transform_code(AST)
+	parameters.TAST = transform_code(AST)
 
-	params.TRACE["RC"]=Dict()
-	params.TRACE["observe"]=Dict()
+	parameters.TRACE["RC"]=Dict()
+	parameters.TRACE["observe"]=Dict()
 
-	params.CURRENT_TRACE = deepcopy(params.TRACE)
-	trace_update(params.TAST)
-	params.TRACE = deepcopy(params.CURRENT_TRACE)
+	parameters.CURRENT_TRACE = deepcopy(parameters.TRACE)
+	trace_update(parameters.TAST)
+	parameters.TRACE = deepcopy(parameters.CURRENT_TRACE)
 end
 
 
 function observe_iid(trc,tag,input, output)
-	trc.OBSERVATIONS = {"input"=>input, "output"=>output}
+	trc.OBSERVATIONS = ["input"=>input, "output"=>output]
 end
 
 
 function trace(PROGRAM, args)
-	params.OBSERVATIONS = args
-	params.PROGRAM = PROGRAM
-	AST=code_lowered(params.PROGRAM,())
+	parameters.OBSERVATIONS = args
+	parameters.PROGRAM = PROGRAM
+	AST=code_lowered(parameters.PROGRAM,())
 	#AST=code_lowered(PROGRAM,(Dict{Any,Any},))
-	params.TAST = transform_code(AST)
+	parameters.TAST = transform_code(AST)
 
-	params.TRACE["RC"]=Dict()
-	params.TRACE["observe"]=Dict()
+	parameters.TRACE["RC"]=Dict()
+	parameters.TRACE["observe"]=Dict()
 
-	params.CURRENT_TRACE = deepcopy(params.TRACE)
-	trace_update(params.TAST)
-	params.TRACE = deepcopy(params.CURRENT_TRACE)
-	return params
+	parameters.CURRENT_TRACE = deepcopy(parameters.TRACE)
+	trace_update(parameters.TAST)
+	parameters.TRACE = deepcopy(parameters.CURRENT_TRACE)
+	return parameters
 end
 
 
-function infer( debug_callback="", iterations = 100, group_name="", inference="MH_SingleSite", args="",mode="")
+function infer(debug_callback="", iterations = 100, group_name="", inference="MH_SingleSite", args="",mode="")
 	println("Starting Inference [Scheme=",inference,"]")
-	ll = params.TRACE["ll"];
+	ll = parameters.TRACE["ll"];
 	for iters=1:iterations
 		if iters%50 == 0
 			println("Iter#: ",iters)
 		end
-		rv_choices = collect(keys(params.TRACE["RC"]))
+		rv_choices = collect(keys(parameters.TRACE["RC"]))
 		if group_name == ""
 			#select random f_k via its name
-			idx=rand(1:length(params.TRACE["RC"]))
+			idx=rand(1:length(parameters.TRACE["RC"]))
 			chosen_rv = [rv_choices[idx]]
 		else
 			if group_name == "CYCLE" #reserved name for cycling through all variables
@@ -217,34 +220,34 @@ function infer( debug_callback="", iterations = 100, group_name="", inference="M
 		if inference == "MH" || inference == "MH_SingleSite"
 			if typeof(chosen_rv) == Array{ASCIIString,1}
 				chosen_rv = chosen_rv[1]
-				new_X,new_logl, F, R = sample_from_proposal(params.TRACE,chosen_rv,inference)
+				new_X,new_logl, F, R = sample_from_proposal(parameters.TRACE,chosen_rv,inference)
 
-				params.NEW_TRACE = deepcopy(params.TRACE)
-				params.NEW_TRACE["iter"] = iters
-				params.NEW_TRACE["RC"][chosen_rv]["X"]=new_X	
-				params.NEW_TRACE["RC"][chosen_rv]["logl"]=new_logl
+				parameters.NEW_TRACE = deepcopy(parameters.TRACE)
+				parameters.NEW_TRACE["iter"] = iters
+				parameters.NEW_TRACE["RC"][chosen_rv]["X"]=new_X	
+				parameters.NEW_TRACE["RC"][chosen_rv]["logl"]=new_logl
 			else
 				#block proposal
-				params.NEW_TRACE = deepcopy(params.TRACE)
-				for ii=1:length(chosen_rv)
+				parameters.NEW_TRACE = deepcopy(parameters.TRACE)
+				for ii=eachindex(chosen_rv)
 					crv = chosen_rv[ii]
-					new_X,new_logl, F, R = sample_from_proposal(params.TRACE,crv,inference)
-					params.NEW_TRACE["RC"][crv]["X"]=new_X
-					params.NEW_TRACE["RC"][crv]["logl"]=new_logl
+					new_X,new_logl, F, R = sample_from_proposal(parameters.TRACE,crv,inference)
+					parameters.NEW_TRACE["RC"][crv]["X"]=new_X
+					parameters.NEW_TRACE["RC"][crv]["logl"]=new_logl
 				end
 			end
 
-			params.CURRENT_TRACE = deepcopy(params.NEW_TRACE)
-			# println("AFTER CHOBJ:", params.CURRENT_TRACE["RC"]["G1"]["ch_object"])		
-			trace_update(params.TAST)
-			params.NEW_TRACE = deepcopy(params.CURRENT_TRACE)
-			new_ll = params.NEW_TRACE["ll"]; ll_fresh = params.NEW_TRACE["ll_fresh"]; ll_stale = params.NEW_TRACE["ll_stale"]
+			parameters.CURRENT_TRACE = deepcopy(parameters.NEW_TRACE)
+			# println("AFTER CHOBJ:", parameters.CURRENT_TRACE["RC"]["G1"]["ch_object"])		
+			trace_update(parameters.TAST)
+			parameters.NEW_TRACE = deepcopy(parameters.CURRENT_TRACE)
+			new_ll = parameters.NEW_TRACE["ll"]; ll_fresh = parameters.NEW_TRACE["ll_fresh"]; ll_stale = parameters.NEW_TRACE["ll_stale"]
 
 			#acceptance ratio
 			if new_ll == -1e200
 				ACC = -1e200
 			else
-				ACC = new_ll - ll + R - F + log(length(params.TRACE["RC"])) - log(length(params.NEW_TRACE["RC"])) + ll_stale - ll_fresh
+				ACC = new_ll - ll + R - F + log(length(parameters.TRACE["RC"])) - log(length(parameters.NEW_TRACE["RC"])) + ll_stale - ll_fresh
 			end
 
 			if mode == "HALLUCINATE"
@@ -252,23 +255,23 @@ function infer( debug_callback="", iterations = 100, group_name="", inference="M
 			end
 
 			if log(rand()) < ACC #accept
-				params.TRACE = deepcopy(params.NEW_TRACE)
+				parameters.TRACE = deepcopy(parameters.NEW_TRACE)
 				ll = new_ll
-				debug_callback(params.TRACE)
+				debug_callback(parameters.TRACE)
 			else# Rejected
-				params.NEW_TRACE = Dict()
+				parameters.NEW_TRACE = Dict()
 			end
 		########## HMC ##########
 		elseif inference == "HMC"
-			params.TRACE = hmc_propose(chosen_rv, debug_callback)
+			parameters.TRACE = hmc_propose(chosen_rv, debug_callback)
 		elseif inference == "Gibbs"
-			params.TRACE = gibbs_propose(chosen_rv, debug_callback)
+			parameters.TRACE = gibbs_propose(chosen_rv, debug_callback)
 		elseif inference == "LBFGS"
-			params.TRACE = lbfgs_propose(chosen_rv, debug_callback, args)
+			parameters.TRACE = lbfgs_propose(chosen_rv, debug_callback, args)
 		elseif inference == "SGD"
-			params.TRACE = SGD(group_name, debug_callback, iterations)
+			parameters.TRACE = SGD(group_name, debug_callback, iterations)
 		elseif inference == "ELLIPTICAL"
-			params.TRACE = ELLIPTICAL(chosen_rv, debug_callback)
+			parameters.TRACE = ELLIPTICAL(chosen_rv, debug_callback)
 		end
 	end
 

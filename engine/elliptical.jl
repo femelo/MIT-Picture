@@ -4,7 +4,7 @@
 # % The Proceedings of the 13th International Conference on Artificial
 # % Intelligence and Statistics (AISTATS), JMLR W&CP 9:541-548, 2010.
 
-using Debug
+using Debugger
 using Distributions
 
 function ELLIPTICAL(names, debug_callback)
@@ -29,7 +29,7 @@ function ELLIPTICAL(names, debug_callback)
     phi_max = phi;
 
     ERP = params.CURRENT_TRACE["RC"][names[1]]["ERP"]
-    theta_c = {0,1} #hack -- should be passed in
+    theta_c = [0, 1] #hack -- should be passed in
 	ERP_OBJ = ERP_CREATE(ERP, theta_c)
 
 	#Slice sampling loop

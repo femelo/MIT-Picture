@@ -1,4 +1,4 @@
-using Debug
+using Debugger
 using Distributions
 
 function get_bounds(names)
@@ -50,7 +50,7 @@ function lbfgs_propose(names, debug_callback, args)
 	gpr = odr.gaussian_pyramid(difference, n_levels=6, as_list=true)#[-3:]
 	gpr = gpr[args["res"][1]:args["res"][2]]
 	E = 0
-	for i = 1:length(gpr)
+	for i = eachindex(gpr)
 		if i == 1
 			E = pycall(chumpy_lib["ravel"],PyAny, gpr[i])
 		else

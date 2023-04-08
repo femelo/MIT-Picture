@@ -1,4 +1,4 @@
-using Debug
+using Debugger
 using Distributions
 
 @debug function set_chobject(DB, name , q, q_len)
@@ -185,7 +185,7 @@ end
 				indxs = name_indices[name]
 				phat = deepcopy(p[indxs])
 				qhat = deepcopy(q[indxs])
-				for ii = 1:length(qhat)
+				for ii = eachindex(qhat)
 					while qhat[ii] > ulimit || qhat[ii] < llimit
 						if qhat[ii] > ulimit
 							qhat[ii] = ulimit - (qhat[ii] - ulimit)

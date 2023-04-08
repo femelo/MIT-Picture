@@ -69,7 +69,7 @@ tmp = pycall(chumpy_lib["subtract"], PyAny, tmp, 0)
 
 OBSERVATIONS_GPR = odr.gaussian_pyramid(tmp,n_levels=6,as_list=true)
 OBSERVATIONS_RAVEL = deepcopy(OBSERVATIONS_GPR)
-for id=1:length(OBSERVATIONS_RAVEL)
+for id=eachindex(OBSERVATIONS_RAVEL)
 	OBSERVATIONS_RAVEL[id] = pycall(chumpy_lib["ravel"],PyAny,OBSERVATIONS_RAVEL[id])
 end
 

@@ -1,22 +1,29 @@
 #Human Program Simulator
 import bpy
-import socket,json,select
+import socket
+import json
+import select
 import sys
-import math,time,pdb
+import math
+import time
+import pdb
 
 class BodySimulatorServer:
 
 	def __init__(self):
 		#self.rootdir='/Users/tejas/Documents/MIT/UAI2014/src/tmp/'
 		#self.rootdir='/Users/tejas/Documents/MIT/UAI2014/src/tmp/'+str(time.time())+'/'
-		self.rootdir='tmp/'+str(time.time())+'/'
+		self.rootdir='/home/flavio/1_Research/Probabilistic_Programming/tmp/' + str(time.time()) + '/'
+		#self.rootdir='tmp/'+str(time.time())+'/'
 		self.rig=bpy.data.objects['rig']
 		self.pose=self.rig.pose
+		print(self.pose)
 		self.bones = self.pose.bones
 		self.capture_cnt = 0
-		self.HOST=''
-		self.PORT=int(sys.argv[4])#5000
-		print ("Listening to port {}".format(self.PORT))
+		self.HOST='127.0.0.1'
+		#self.PORT=int(sys.argv[4])
+		self.PORT=5000
+		print("Listening to port {}".format(self.PORT))
 		self.CONNECTION_LIST=[]
 		self.connect()
 
@@ -151,7 +158,7 @@ class BodySimulatorServer:
 
 
 	def process(self,data):
-		#print (data)
+		print (data)
 		data = json.loads(data)
 		cmd = data['cmd']
 
@@ -188,11 +195,11 @@ class BodySimulatorServer:
 		#for i in range(100000):
 		while True:
 			sockfd, addr = self.sock.accept()
-			#print ("Client (%s, %s) connected" % addr)
+			print ("Client (%s, %s) connected" % addr)
 
 			data = sockfd.recv(10240)
 			data = data.decode("utf-8")
-			#print(data)
+			print(data)
 			if len(data) > 0 and data != None:
 				ret = self.process(data)
 				#first send number of bytes

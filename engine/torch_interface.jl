@@ -1,6 +1,6 @@
 #Torch interface from Julia
 
-module TORCH
+module Torch
 using JSON
 using ZMQ
 

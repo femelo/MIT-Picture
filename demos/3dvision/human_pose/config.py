@@ -172,11 +172,11 @@ class Sports:
 			'heel_R':{'d':[[-2,0.1],[0,0.15],[-0.2,0.2]]}		
 			}	
 			if False:#len(ec2.keys()) > 0:
-				print "Running on EC2"
+				print("Running on EC2")
 				global_scale = [2.50,2.70]
 				#raise Exception
 			else:
-				print "Not running on EC2"
+				print("Not running on EC2")
 				global_scale = [1.50,1.80]#[1.4,1.85]
 
 			global_translate = [[-0.2,0.2],[None,None],[0.15,0.5]]
@@ -252,11 +252,11 @@ class Sitting_Conf:
 		#'heel_R':{'d':[[-2,0.1],[0,0.15],[-0.2,0.2]]}		
 		}
 		if False:#len(ec2.keys()) > 0:
-			print "Running on EC2"
+			print("Running on EC2")
 			global_scale = [2.50,2.57]
 			raise Exception
 		else:
-			print "Not running on EC2"
+			print("Not running on EC2")
 			global_scale = [2.75,3.0]#[1.4,1.85]
 
 		global_translate = [[-0.8,0.7],[None,None],[0.10,0.90]]

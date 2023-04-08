@@ -1,8 +1,8 @@
 
 
-using Debug
+using Debugger
 using Distributions
-using NumericExtensions
+#using NumericExtensions
 
 function gibbs_propose(names, debug_callback)
 

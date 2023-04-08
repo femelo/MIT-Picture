@@ -1,4 +1,4 @@
-using Debug
+using Debugger
 using Distributions
 
 
@@ -8,7 +8,7 @@ function setArray(v,newv)
 			if typeof(newv) == Array{Int64,2}
 				set!(v,(i,j), newv[i+1,j+1])
 			else
-				set!(v,(i,j),int(get(newv,(i,j))))
+				set!(v,(i,j),int(get(newv, (i,j), (0,0))))
 			end
 		end
 	end

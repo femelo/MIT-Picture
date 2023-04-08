@@ -1,1 +1,1 @@
-blender HumanKTH.blend -P body_simulator_server.py $1 &
+blender HumanKTH283.blend -P body_simulator_server.py

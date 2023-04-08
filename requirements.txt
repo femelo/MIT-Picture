@@ -1,0 +1,13 @@
+setuptools
+wheel
+scipy
+numpy
+matplotlib
+scikit-image
+imageio
+pillow
+opendr
+chumpy
+future-fstrings
+bpy
+

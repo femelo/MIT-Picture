@@ -47,7 +47,7 @@ function observe_NoisyGaussianPyramid(rendering, obs_gpr)
 	mu = 0; sigma = 0.001
 	U_Potential=NaN
 	# XVALS=NaN
-	for id = 1:length(gpr)
+	for id = eachindex(gpr)
 		### CORRECT ###
 		######### Likelihood ##########
 		t0=pycall(chumpy_lib["ravel"],PyAny,gpr[id])
@@ -183,7 +183,7 @@ function DB_RandomManager(params, name, theta_c, ERP, m, n)
 			if length(X) == 1
 				set!(params.CURRENT_TRACE["RC"][name]["ch_object"],0,X[1])
 			else
-				for ii=1:length(X)
+				for ii=eachindex(X)
 					#i-1 because python starts with 0 index
 					set!(params.CURRENT_TRACE["RC"][name]["ch_object"],ii-1,X[ii])
 				end
@@ -232,12 +232,12 @@ end
 
 function get_name(dist,FUNC,LINE,LOOP, MEM, BID)
 	if isnan(MEM) == false
-		name = string(dist,"_F", length(FUNC)>0?top(FUNC):0,"_L",length(LINE)>0?top(LINE):0,"_M",string(MEM))
+		name = string(dist,"_F", length(FUNC)>0 ? top(FUNC) : 0,"_L",length(LINE)>0 ? top(LINE) : 0,"_M",string(MEM))
 	elseif BID != ""
 		#name = string(dist,"_F", length(FUNC)>0?top(FUNC):0,"_L",length(LINE)>0?top(LINE):0,"_B",string(BID))		
 		name = string(BID)		
 	else
-		name = string(dist,"_F", length(FUNC)>0?top(FUNC):0,"_P",length(LOOP)>0?top(LOOP):0,"_L",length(LINE)>0?top(LINE):0)
+		name = string(dist,"_F", length(FUNC)>0 ? top(FUNC) : 0,"_P",length(LOOP)>0 ? top(LOOP) : 0,"_L",length(LINE)>0 ? top(LINE) : 0)
 	end
 	return name
 end
@@ -256,7 +256,7 @@ function Beta_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("Beta",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = Beta
 	ret = DB_RandomManager(params, name, theta_c, ERP, m, n)
 
@@ -276,7 +276,7 @@ function Gamma_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("Gamma",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = Gamma
 	ret = DB_RandomManager(params, name, theta_c, ERP, m, n)
 
@@ -297,7 +297,7 @@ function MvNormal_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("MvNormal",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = MvNormal
 	return DB_RandomManager(params, name, theta_c, ERP, m, n)
 end
@@ -306,7 +306,7 @@ function Uniform_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("Uniform",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = Uniform
 	ret = DB_RandomManager(params, name, theta_c, ERP, m, n)
 	return ret
@@ -316,7 +316,7 @@ function DiscreteUniform_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("DiscreteUniform",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = DiscreteUniform
 	return DB_RandomManager(params, name, theta_c, ERP, m, n)
 end
@@ -325,7 +325,7 @@ function Multinomial_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("Multinomial",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = Multinomial
 	return DB_RandomManager(params, name, theta_c, ERP, m, n)
 end
@@ -334,7 +334,7 @@ function Normal_DB(a,b,m,n,LINE,FUNC,LOOP,MEM, BID)
 	a = PyJCast(a)
 	b = PyJCast(b)
 	name = get_name("Normal",FUNC,LINE,LOOP, MEM, BID)
-	theta_c = {a,b}
+	theta_c = [a, b]
 	ERP = Normal
 	ret = DB_RandomManager(params, name, theta_c, ERP, m, n)
 

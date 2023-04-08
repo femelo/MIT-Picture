@@ -106,7 +106,7 @@ mu = 0; sigma = 0.001
 E=NaN
 XVALS=NaN
 U_Potential = NaN
-for id = 1:length(gpr)
+for id = eachindex(gpr)
   layer = pycall(chumpy_lib["ravel"],PyAny,gpr[id])
   dlayer_pdf = layer["r"]
   dlayer_pdf = convert(PyAny, dlayer_pdf)
@@ -148,7 +148,7 @@ grad_U = sum(grad_U,1)/size(grad_U,1);
 @bp
 
 print("GRAD: ")
-for i=1:length(grad)
+for i=eachindex(grad)
   print(grad[i],"   ")
 end
 println()
@@ -157,7 +157,7 @@ println()
 
 # E=0
 # final_grad = NaN
-# for id=1:length(gpr)
+# for id=eachindex(gpr)
 #   sz = pycall(chumpy_lib["shape"],PyAny,gpr[id])
 #   E_id = pycall(chumpy_lib["ravel"],PyAny,gpr[id])
 #   E_id = E_id["r"]
