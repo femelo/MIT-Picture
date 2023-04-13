@@ -4,30 +4,45 @@
 # DESCRIPTION: Generative 3D human pose estimation 
 # Given a single image of a human, the model will compute the most likely 3D pose. 
 
-include("../../../engine/picture.jl")
-#using Gen
+#include("../../../engine/picture.jl")
+using Gen
+using LinearAlgebra
+using PyCall
 using Debugger
 using Sockets
 import JSON
+using Printf
 
 #Note: pyimport calls are *very* slow so you are better off using something else for heavy use case.
 @pyimport imageio;
-@pyimport scipy.misc as scpy; @pyimport skimage.feature as edge
-@pyimport scipy.ndimage.morphology as scp_morph; @pyimport numpy as np
+@pyimport scipy as sp;
+@pyimport skimage as sk;
+@pyimport numpy as np;
+global imread = imageio.v2.imread;
+global distance_transform = sp.ndimage.distance_transform_edt;
+global detect_edges = sk.feature.canny;
+global invert = np.invert;
+global multiply = np.multiply;
+global find = np.where;
 
 global IMAGE_COUNTER = 0
-OBSERVATIONS=Dict()
+global OBSERVATIONS = Dict()
 # OBS_FNAME = ARGS[1] #observed image
 OBS_FNAME = "/home/flavio/1_Research/Probabilistic_Programming/mit-picture/demos/3dvision/human_pose/test.png"
-OBS_IMAGE = imageio.v2.imread(OBS_FNAME, as_gray=true) / 255.0
-OBS_IMAGE = edge.canny(OBS_IMAGE, sigma=1.0)
-#calculate and store distance transform 
-dist_obs = pyeval("dt(npinvert(im))", npinvert=np.invert, dt=scp_morph.distance_transform_edt, im=OBS_IMAGE)
-OBSERVATIONS["dist_obs"] = dist_obs
+OBS_IMAGE = imread(OBS_FNAME, as_gray=true) / 255.0;
+OBS_EDGES = detect_edges(OBS_IMAGE, sigma=1.0);
+# Calculate and store distance transform
+observed_distance_matrix = distance_transform(invert(OBS_EDGES));
+OBSERVATIONS["distance_matrix"] = observed_distance_matrix;
+global VALID_INDEXES = pyeval("find(edge_map > 0)", find=find, edge_map=OBS_EDGES);
+OBSERVATIONS["distance_map"] = pyeval(
+	"distance_matrix[valid_indexes]",
+	distance_matrix=observed_distance_matrix,
+	valid_indexes=VALID_INDEXES
+);
 
-obs_erp = Normal
-obs_a = 0
-obs_b = 0.07
+mu = 0
+sigma = 0.07
 
 #Many iterations
 sample_directory = "/home/flavio/1_Research/Probabilistic_Programming"
@@ -43,8 +58,8 @@ inference = "Gibbs"
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
 	str = "["
-	for i=eachindex(arr)
-		if arr[i] == None
+	for i = eachindex(arr)
+		if arr[i] == "None"
 			str = string(str,"\"", string(arr[i]),"\"")
 		else
 			str = string(str,string(arr[i]))
@@ -67,121 +82,199 @@ function send_to_blender(msg)
 			ret = readline(client)
 			return ret
 		catch y
-			print(y)
+			#print(y)
+			print()
 		end
 	end #while
 end #function
 
-function render(CMDS)
-	for i=eachindex(CMDS)
-		#print ("executing ", CMDS[i]["cmd"], "\n")
-		cmd = string("\"", CMDS[i]["cmd"] ,"\"");
+function render(commands)
+	for i = eachindex(commands)
+		#print ("executing ", commands[i]["cmd"], "\n")
+		cmd = string("\"", commands[i]["cmd"] ,"\"");
 		name = "0";
-		id = string(CMDS[i]["id"])
-		M = arr2string(CMDS[i]["M"])
-		msg = string("{\"cmd\":", cmd, ", \"name\": ", name, ", \"id\":", id, ", \"M\":",M,"}");
+		id = string(commands[i]["id"])
+		M = arr2string(commands[i]["M"])
+		msg = string("{\"cmd\":", cmd, ", \"name\": ", name, ", \"id\":", id, ", \"M\":", M, "}");
 		send_to_blender(msg)
 	end
 	#render image
 	#print("Rendering\n")
 	msg = "{\"cmd\" : \"captureViewport\"}"
 	fname = JSON.parse(send_to_blender(msg))
-	rendering = int(scpy.imread(fname))/255.0
+	rendering = imread(fname, as_gray=true) / 255.0
 	return rendering
 end
 
 ################### PROBABILISTIC CODE ###############
-function PROGRAM()	
-	LINE=Stack(Int); FUNC=Stack(Int); LOOP=Stack(Int)
-	
-	bone_index = ["arm_elbow_R" => 9, "arm_elbow_L" => 7, "hip" => 1, "heel_L" => 37, "heel_R" => 29];
+@gen function generate_body_pose()	
+	bone_index = Dict(
+		"arm_elbow_right" => 9,
+		"arm_elbow_left" => 7,
+		"hip" => 1,
+		"heel_left" => 37,
+		"heel_right" => 29
+	);
 
-	CMDS = Dict(); cnt=1;
+	commands = Dict();
+	index = 1;
 
-	arm_elbowR_rz = block("arm_elbowR_rz", Uniform(0,360))
-	CMDS[cnt]=["cmd"=>"setBoneRotationEuler", "name"=>0, "id"=>bone_index["arm_elbow_R"], "M"=>[None,None,arm_elbowR_rz]]; cnt+=1;
+	arm_elbow_right_rz = @trace(Gen.uniform(0, 360), :arm_elbow_right_rz);
+	commands[index] = Dict(
+		"cmd" => "setBoneRotationEuler",
+		"name" => 0,
+		"id" => bone_index["arm_elbow_right"],
+		"M" => ["None", "None", arm_elbow_right_rz]
+	);
+	index += 1;
 
-	arm_elbowR_dx = block("arm_elbowR_dx", Uniform(-1,0))
-	arm_elbowR_dy = block("arm_elbowR_dy", Uniform(-1,1))
-	arm_elbowR_dz = block("arm_elbowR_dz", Uniform(-1,1))
-	CMDS[cnt]=["cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["arm_elbow_R"], "M"=>[arm_elbowR_dx,arm_elbowR_dy,arm_elbowR_dz]]; cnt+=1;
+	arm_elbow_right_dx = @trace(Gen.uniform(-1, 0), :arm_elbow_right_dx);
+	arm_elbow_right_dy = @trace(Gen.uniform(-1, 1), :arm_elbow_right_dy);
+	arm_elbow_right_dz = @trace(Gen.uniform(-1, 1), :arm_elbow_right_dz);
+	commands[index] = Dict(
+		"cmd" => "setBoneLocation",
+		"name" => 0,
+		"id" => bone_index["arm_elbow_right"],
+		"M" => [arm_elbow_right_dx, arm_elbow_right_dy, arm_elbow_right_dz]
+	);
+	index += 1;
 
-	arm_elbowL_rz = block("arm_elbowL_rz", Uniform(0,360))
-	CMDS[cnt]=["cmd"=>"setBoneRotationEuler", "name"=>0, "id"=>bone_index["arm_elbow_L"], "M"=>[None,None,arm_elbowL_rz]]; cnt+=1;
+	arm_elbow_left_rz = @trace(Gen.uniform(0, 360), :arm_elbow_left_rz)
+	commands[index] = Dict(
+		"cmd" => "setBoneRotationEuler",
+		"name" => 0,
+		"id" => bone_index["arm_elbow_left"],
+		"M" => ["None", "None", arm_elbow_left_rz]
+	);
+	index += 1;
 
-	arm_elbowL_dx = block("arm_elbowL_dx", Uniform(0,1))
-	arm_elbowL_dy = block("arm_elbowL_dy", Uniform(-1,1))
-	arm_elbowL_dz = block("arm_elbowL_dz", Uniform(-1,1))
-	CMDS[cnt]=["cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["arm_elbow_L"], "M"=>[arm_elbowL_dx,arm_elbowL_dy,arm_elbowL_dz]]; cnt+=1;
+	arm_elbow_left_dx = @trace(Gen.uniform( 0, 1), :arm_elbow_left_dx);
+	arm_elbow_left_dy = @trace(Gen.uniform(-1, 1), :arm_elbow_left_dy);
+	arm_elbow_left_dz = @trace(Gen.uniform(-1, 1), :arm_elbow_left_dz);
+	commands[index] = Dict(
+		"cmd" => "setBoneLocation",
+		"name" => 0,
+		"id" => bone_index["arm_elbow_left"],
+		"M" => [arm_elbow_left_dx, arm_elbow_left_dy, arm_elbow_left_dz]
+	);
+	index += 1;
 
-	hip_dz = block("hip_dz", Uniform(-0.35,0))
-	CMDS[cnt]=["cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["hip"], "M"=>[None,None,hip_dz]]; cnt+=1;
+	hip_dz = @trace(Gen.uniform(-0.35, 0.00), :hip_dz);
+	commands[index] = Dict(
+		"cmd" => "setBoneLocation",
+		"name" => 0,
+		"id" => bone_index["hip"],
+		"M" => ["None", "None", hip_dz]
+	);
+	index += 1;
 
-	heel_L_dx = block("heel_L_dx", Uniform(-0.1,0.45))
-	heel_L_dy = block("heel_L_dy", Uniform(0,0.15))
-	heel_L_dz = block("heel_L_dz", Uniform(-0.2,0.2))
-	CMDS[cnt]=["cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["heel_L"], "M"=>[heel_L_dx,heel_L_dy,heel_L_dz]]; cnt+=1;
+	heel_left_dx = @trace(Gen.uniform(-0.10, 0.45), :heel_left_dx);
+	heel_left_dy = @trace(Gen.uniform( 0.00, 0.15), :heel_left_dy);
+	heel_left_dz = @trace(Gen.uniform(-0.20, 0.20), :heel_left_dz);
+	commands[index] = Dict(
+		"cmd" => "setBoneLocation",
+		"name" => 0,
+		"id" => bone_index["heel_left"],
+		"M" => [heel_left_dx, heel_left_dy, heel_left_dz]
+	);
+	index += 1;
 
-	heel_R_dx = block("heel_R_dx", Uniform(-0.45,0.1))
-	heel_R_dy = block("heel_R_dy", Uniform(0,0.15))
-	heel_R_dz = block("heel_R_dz", Uniform(-0.2,0.2))
-	CMDS[cnt]=["cmd"=>"setBoneLocation", "name"=>0, "id"=>bone_index["heel_R"], "M"=>[heel_R_dx,heel_R_dy,heel_R_dz]]; cnt+=1;
+	heel_right_dx = @trace(Gen.uniform(-0.45, 0.10), :heel_right_dx);
+	heel_right_dy = @trace(Gen.uniform( 0.00, 0.15), :heel_right_dy);
+	heel_right_dz = @trace(Gen.uniform(-0.20, 0.20), :heel_right_dz);
+	commands[index] = Dict(
+		"cmd" => "setBoneLocation",
+		"name" => 0,
+		"id" => bone_index["heel_right"],
+		"M" => [heel_right_dx, heel_right_dy, heel_right_dz]
+	);
+	index += 1;
 
-	global_scale = block("global_scale", Normal(0.98,0.01))
-	global_translate_x = block("global_translate_x", Uniform(-2.599287271499634-1,-2.599287271499634+1))
-	global_translate_z = block("global_translate_z", Uniform(-2.5635364055633545,-2.5635364055633545+0.5))
-	global_rotate_z = 0 #Uniform(-1,1)
+	global_scale = @trace(Gen.normal(0.98, 0.01), :global_scale);
+	global_translate_x = @trace(Gen.uniform(-2.599287271499634-1, -2.599287271499634+1), :global_translate_x);
+	global_translate_z = @trace(Gen.uniform(-2.5635364055633545, -2.5635364055633545+0.5), :global_translate_z);
+	global_rotate_z = 0;
 
-	camera = [global_scale, None, None, global_rotate_z, global_translate_x, None, global_translate_z]
-	CMDS[cnt]=["cmd"=>"setGlobalAffine", "name"=>0, "id"=>0, "M"=>camera]; cnt+=1;
+	camera = [global_scale, "None", "None", global_rotate_z, global_translate_x, "None", global_translate_z];
+	commands[index] = Dict(
+		"cmd" => "setGlobalAffine",
+		"name" => 0,
+		"id" => 0,
+		"M" => camera
+	);
 
-	rendering = render(CMDS)
+	rendering = render(commands);
+	edge_map = detect_edges(rendering, sigma=1.0); # edge_map = sk.feature.canny(rendering, sigma=1.0)
+	edges = pyeval(
+		"invert(edge_map[valid_indexes]).astype(float)",
+		invert=invert,
+		edge_map=edge_map,
+		valid_indexes=VALID_INDEXES
+	);
 
-	edgemap = pyeval("canny(rendering,1.0)", canny = edge.canny, rendering=rendering) #edgemap = edge.canny(rendering, sigma=1.0)
+	# Calculate distance transform
+	# distance_matrix = scp.ndimage.distance_transform_edt(~OBSERVATIONS["IMAGE"])
+	# valid_indexes = find(edge_map > 0);
+	# edge_map[valid_indexes] = 1e-6;
+	# valid_indexes = np.where(edge_map > 0)
+	# data = multiply(OBSERVATIONS["distance_matrix"][valid_indexes], edge_map[valid_indexes])
 
-	#calculate distance transform
-	# dist_obs = scp_morph.distance_transform_edt(~OBSERVATIONS["IMAGE"])
-	valid_indxs = pyeval("npwhere(edgemap>0)", npwhere=np.where,edgemap=edgemap)
-	#valid_indxs = np.where(edgemap > 0)
-	D = pyeval("npmultiply(dist_obs[valid_indxs], ren[valid_indxs])",npmultiply=np.multiply, dist_obs=OBSERVATIONS["dist_obs"],valid_indxs=valid_indxs, ren=edgemap)
+	# Generate observation
+	Y = @trace(Gen.broadcasted_normal(edges .- mu, sigma), :Y);
 
-	#constraint to observation
-	observe(0,obs_erp(obs_a,obs_b),D)
-
-	return rendering
+	return Y
 end
 
-########### USER DIAGNOSTICS ##############
-function debug_callback(TRACE)
-	global IMAGE_COUNTER
-	println("LOGL=>", TRACE["ll"])
-	scpy.imsave(string(sample_directory * "/sample_",lpad(IMAGE_COUNTER, 5, 0),".png",), TRACE["PROGRAM_OUTPUT"])
-	open(string(sample_directory * "/trace_",lpad(IMAGE_COUNTER, 5, 0),".txt",), "a") do f
-		d = deepcopy(TRACE["RC"])
-		d["LOGL"] = TRACE["ll"]
-		d["OBSERVED"] = Dict()
-		d["OBSERVED"]["ERP"] = obs_erp
-		d["OBSERVED"]["a"] = obs_a
-		d["OBSERVED"]["b"] = obs_b
+function logmeanexp(scores)
+    return logsumexp(scores) - log(length(scores))
+end
 
-		try
-			d["ITER"] = TRACE["iter"]
-		catch e
-			1
-		end
-		d["INFERENCE"] = inference
-		write(f, JSON.json(d))
+function gibbs_kernel(tr, vars)
+	for var_addr in vars
+		(tr, _) = Gen.mh(tr, Gen.select(var_addr));
 	end
-	IMAGE_COUNTER += 1
+	return tr
+end
+
+function do_inference()
+	observation = Gen.choicemap((:Y, OBSERVATIONS["distance_map"]));
+	vars = [
+		:arm_elbow_right_rz,
+		:arm_elbow_right_dx,
+		:arm_elbow_right_dy,
+		:arm_elbow_right_dz,
+		:arm_elbow_left_rz,
+		:arm_elbow_left_dx,
+		:arm_elbow_left_dy,
+		:arm_elbow_left_dz,
+		:hip_dz,
+		:heel_left_dx,
+		:heel_left_dy,
+		:heel_left_dz,
+		:heel_right_dx,
+		:heel_right_dy,
+		:heel_right_dz,
+		:global_scale,
+		:global_translate_x,
+		:global_translate_z
+	];
+	num_iterations = 100;
+	# Initial trace
+	(tr, _) = Gen.generate(generate_body_pose, (), observation);
+	scores = Vector{Float64}(undef, num_iterations);
+	for i = 1:num_iterations
+		@printf("Iteration %03d", i);
+		@time tr = gibbs_kernel(tr, vars);
+		score = Gen.get_score(tr);
+		println("Log probability: ", score);
+		scores[i] = score;
+	end
+	println("Log mean probability: ", logmeanexp(scores));
 end
 
 print(string("Connecting to port ", port,"\n",))
 send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/tmp/\"}")
 
-load_program(PROGRAM)
-load_observations(OBSERVATIONS)
-init()
-#run basic inference by cycling through all variables 
-infer(debug_callback,350,"CYCLE",inference)
+do_inference();
 
 
