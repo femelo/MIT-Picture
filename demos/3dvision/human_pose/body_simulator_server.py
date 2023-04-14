@@ -1,31 +1,75 @@
 # Human Program Simulator
 import bpy
+import os
 import socket
 import json
-import select
 import sys
 import math
 import time
-import pdb
+import sys
+import logging
+from logging import (
+    Logger,
+    Formatter,
+    StreamHandler,
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR,
+    CRITICAL
+)
 
+if sys.platform == 'win32':
+    os.system("")
+
+class ColoredLoggerFormatter(Formatter):
+    """Logger custom formatting class"""
+    cyan = '\x1b[36m'
+    green = '\x1b[32m'
+    yellow = '\x1b[36m'
+    light_red = '\x1b[91m'
+    red = '\x1b[31m'
+    reset = '\x1b[39m'
+    format1 = "[%(levelname)-8s] %(message)s"
+    format2 = "[%(levelname)-8s] [%(filename)-25s: %(lineno)04d] %(message)s"
+    FORMATS = {
+        DEBUG: green + format2 + reset,
+        INFO: cyan + format2 + reset,
+        WARNING: yellow + format2 + reset,
+        ERROR: light_red + format2 + reset,
+        CRITICAL: red + format2 + reset
+    }
+
+    def format(self, record):
+        """Format logging record."""
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = Formatter(log_fmt)
+        return formatter.format(record)
+    
+    def add_to(self, logger: Logger, level: int = INFO):
+        """Add stream formatter to logger."""
+        stream_handler = StreamHandler()
+        stream_handler.setLevel(level)
+        stream_handler.setFormatter(self)
+        logger.addHandler(stream_handler)
+
+logger = logging.getLogger(__file__)
+logger.setLevel(level=INFO)
+formatter = ColoredLoggerFormatter()
+formatter.add_to(logger, level=INFO)
 
 class BodySimulatorServer:
-
-    def __init__(self):
-        # self.rootdir = '/Users/tejas/Documents/MIT/UAI2014/src/tmp/'
-        # self.rootdir = '/Users/tejas/Documents/MIT/UAI2014/src/tmp/'+str(time.time())+'/'
-        self.rootdir = '/home/flavio/1_Research/Probabilistic_Programming/tmp/' + \
-            str(time.time()) + '/'
-        # self.rootdir = 'tmp/'+str(time.time())+'/'
+    """Simulator server class."""
+    def __init__(self, port=5000):
+        self.rootdir = os.path.join('samples', 'tmp' + str(time.time()))
         self.rig = bpy.data.objects['rig']
         self.pose = self.rig.pose
-        print(self.pose)
+        logger.info("Initial pose: %s", self.pose)
         self.bones = self.pose.bones
         self.capture_cnt = 0
         self.HOST = '127.0.0.1'
-        # self.PORT=int(sys.argv[4])
-        self.PORT = 5000
-        print("Listening to port {}".format(self.PORT))
+        self.PORT = port
+        logger.info("Listening to port %s", self.PORT)
         self.CONNECTION_LIST = []
         self.connect()
 
@@ -41,14 +85,14 @@ class BodySimulatorServer:
 
     def getBoneRotationEuler(self, name, id):
         # if self.bones[id].name != name:
-        # print ('[Error: Bone name does not match name in Blender!]')
+        # logger.error('Bone name does not match name in Blender!')
         # raise
         return list(self.bones[id].rotation_euler)
 
     def setBoneRotationEuler(self, name, _id, M):
-        # print('setBoneRotationEuler:', M)
+        # logger.info('setBoneRotationEuler: %s', M)
         #   if self.bones[_id].name != name:
-        #       print ('[Error: Bone name does not match name in Blender!]')
+        #       logger.error('Bone name does not match name in Blender!')
         #       return -1
         self.bones[_id].rotation_mode = 'XYZ'
 
@@ -79,13 +123,13 @@ class BodySimulatorServer:
         # self.bones[_id].rotation_euler.rotate_axis('Z',store_Z)
 
         fname = 1  # self.captureViewport()
-        # print('[END] setBoneRotationEuler:', M)
+        # logger.info('[END] setBoneRotationEuler: %s', M)
         return fname
 
     def setBoneLocation(self, name, id, M):
-        # print('setBoneLocation')
+        # logger.info('setBoneLocation: %s', M)
         # if self.bones[id].name != name:
-        #   print ('[Error: Bone name does not match name in Blender!]')
+        #   logger.error('Bone name does not match name in Blender!')
         #   return -1
         if M[0] != 'None' and M[0] != self.bones[id].location[0]:
             self.bones[id].location[0] = M[0]
@@ -97,7 +141,7 @@ class BodySimulatorServer:
         return fname
 
     def setGlobalAffine(self, name, id, M):
-        # print('setGlobalAffine:', M)
+        # logger.info('setGlobalAffine: %s', M)
         if M[0] != 'None' and M[0] != self.rig.scale[0]:
             self.rig.scale = (M[0], M[0], M[0])
 
@@ -139,16 +183,22 @@ class BodySimulatorServer:
 
     def captureViewport(self):
         # bpy.data.scenes["Scene"].use_nodes=True
-        bpy.context.scene.render.filepath = self.rootdir + \
-            str(self.capture_cnt)+'.png'  # 'rendered.png'
+        file_path = os.path.join(
+            self.rootdir,
+            f"{self.capture_cnt:06d}.png"
+        ) # 'rendered.png'
+        logger.info("Rendering saved to: %s", file_path)
+        bpy.context.scene.render.filepath = file_path
         bpy.ops.render.opengl(write_still=True)
         self.capture_cnt += 1
         return bpy.context.scene.render.filepath
 
     def captureViewport_Texture(self):
         bpy.data.scenes["Scene"].use_nodes = False
-        bpy.context.scene.render.filepath = self.rootdir + \
-            str(self.capture_cnt)+'_texture.png'
+        bpy.context.scene.render.filepath = os.path.join(
+            self.rootdir,
+            f"{self.capture_cnt:06d}_texture.png"
+        )
         bpy.ops.render.render(write_still=True)
         self.capture_cnt += 1
         return bpy.context.scene.render.filepath
@@ -157,7 +207,7 @@ class BodySimulatorServer:
         self.rootdir = rootdir
 
     def process(self, data):
-        print(data)
+        logger.info("Data to process: %s", data)
         data = json.loads(data)
         cmd = data['cmd']
 
@@ -168,7 +218,7 @@ class BodySimulatorServer:
                     if data['M'][i] == -999:
                         data['M'][i] = 'None'
             else:
-                print('ERROR in process')
+                logger.error('Error in processing!')
                 sys.exit()
 
         ret = None
@@ -195,15 +245,15 @@ class BodySimulatorServer:
         # for i in range(100000):
         while True:
             sockfd, addr = self.sock.accept()
-            print("Client (%s, %s) connected" % addr)
+            logger.info("Client (%s, %s) connected", *addr)
 
             data = sockfd.recv(10240)
             data = data.decode("utf-8")
-            print(data)
+            logger.info("Data received: %s", data)
             if len(data) > 0 and data != None:
                 ret = self.process(data)
                 # first send number of bytes
-                # print(str(sys.getsizeof(ret)).encode('utf-8'))
+                # logger.info("Number of bytes: %s", str(sys.getsizeof(ret)).encode('utf-8'))
                 # sockfd.send(str(sys.getsizeof(ret)).encode('utf-8'))
                 # recv OK
                 # sockfd.recv(24)
@@ -215,5 +265,10 @@ class BodySimulatorServer:
 
 
 if __name__ == "__main__":
-    simserver = BodySimulatorServer()
+    port = 5000
+    if "--port" in sys.argv:
+        i = sys.argv.index("--port")
+        if len(sys.argv) > i + 1:
+            port = int(sys.argv[i + 1])
+    simserver = BodySimulatorServer(port=port)
     simserver.run()

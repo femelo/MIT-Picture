@@ -1,13 +1,16 @@
 # Human Program Simulator
+import logging
 import socket
 import json
-import pdb
-import time
 import numpy as np
-
+from logger_formatter import ColoredLoggerFormatter
+logger = logging.getLogger(__file__)
+logger.setLevel(level=logging.INFO)
+formatter = ColoredLoggerFormatter()
+formatter.add_to(logger, level=logging.INFO)
 
 class BodySimulatorClient:
-
+    """Body Simulator Client class."""
     def __init__(self, port):
         self.HOST = 'localhost'    	  # The remote host
         self.PORT = port  # 50014        # The same port as used by the server
@@ -26,33 +29,31 @@ class BodySimulatorClient:
         if True:
             data = json.dumps({'cmd': 'getBoneNames'})
             bones = self.execute(data)
-            print('[getBoneNames]: ')
-            print(bones)
-            print('------------------------')
+            logger.info('getBoneNames: %s', bones)
 
         if True:
             data = json.dumps({'cmd': 'captureViewport'})
             ret = self.execute(data)
-            print('[captureViewport]: ', ret)
-            print('------------------------')
+            logger.info('captureViewport: %s', ret)
 
         if True:
             data = json.dumps(
                 {'cmd': 'getBoneRotationEuler', 'name': 'MASTER', 'id': 0})
             ret = self.execute(data)
-            print(ret)
+            logger.info("Received data 1: %s", ret)
 
             boneid = bones.index('hip')
             data = json.dumps({'cmd': 'getBoneRotationEuler',
                               'name': 'hip', 'id': boneid})
             rot = self.execute(data)
             rot = np.array(rot)
-            print(rot)
+            logger.info("Received data 2: %s", rot)
 
             boneid = bones.index('LEGS')
             data = json.dumps(
                 {'cmd': 'setBoneLocation', 'name': 'LEGS', 'id': boneid, 'M': [0, 1, 0]})
             ret = self.execute(data)
+            logger.info("Received data 3: %s", rot)
 
 
 if __name__ == "__main__":

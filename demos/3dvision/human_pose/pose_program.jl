@@ -27,8 +27,9 @@ global find = np.where;
 
 global IMAGE_COUNTER = 0
 global OBSERVATIONS = Dict()
-# OBS_FNAME = ARGS[1] #observed image
-OBS_FNAME = "/home/flavio/1_Research/Probabilistic_Programming/mit-picture/demos/3dvision/human_pose/test.png"
+# Observed image
+OBS_FNAME = ARGS[1]
+# OBS_FNAME = "/home/flavio/1_Research/Probabilistic_Programming/mit-picture/demos/3dvision/human_pose/test.png"
 OBS_IMAGE = imread(OBS_FNAME, as_gray=true) / 255.0;
 OBS_EDGES = detect_edges(OBS_IMAGE, sigma=1.0);
 # Calculate and store distance transform
@@ -40,20 +41,18 @@ OBSERVATIONS["distance_map"] = pyeval(
 	distance_matrix=observed_distance_matrix,
 	valid_indexes=VALID_INDEXES
 );
-
+# Parameters of the likelihood function
 mu = 0
 sigma = 0.07
 
-#Many iterations
-sample_directory = "/home/flavio/1_Research/Probabilistic_Programming"
-#sample_directory = ARGS[2]
-#sample_directory = string("samples_", split(OBS_FNAME, '/')[end], "_", sample_number,)
-#mkdir(sample_directory)
-#mkdir(sample_directory * "/tmp/")
-#port = parse(Int, ARGS[3])
-port = 5000
-
-inference = "Gibbs"
+# Sample directory
+# sample_directory = "/home/flavio/1_Research/Probabilistic_Programming/tmp"
+sample_directory = ARGS[2]
+if !isdir(sample_directory)
+	mkdir(sample_directory)
+end
+# port = 5000
+port = parse(Int, ARGS[3])
 
 ################### HELPER FUNCTION ###############
 function arr2string(arr)
@@ -74,23 +73,23 @@ end
 ## blender interface ##
 function send_to_blender(msg)
 	while true
-		ret = ""
-		client = Nothing
+		ret = "";
+		client = Nothing;
 		try
-			client = connect("127.0.0.1", port)
-			println(client,msg)
-			ret = readline(client)
+			client = connect("127.0.0.1", port);
+			println(client, msg);
+			ret = readline(client);
 			return ret
 		catch y
-			#print(y)
-			print()
+			# Avoid printing errors
+			# print(y)
 		end
 	end #while
 end #function
 
 function render(commands)
 	for i = eachindex(commands)
-		#print ("executing ", commands[i]["cmd"], "\n")
+		# Print ("executing ", commands[i]["cmd"], "\n")
 		cmd = string("\"", commands[i]["cmd"] ,"\"");
 		name = "0";
 		id = string(commands[i]["id"])
@@ -98,7 +97,7 @@ function render(commands)
 		msg = string("{\"cmd\":", cmd, ", \"name\": ", name, ", \"id\":", id, ", \"M\":", M, "}");
 		send_to_blender(msg)
 	end
-	#render image
+	# Render image
 	#print("Rendering\n")
 	msg = "{\"cmd\" : \"captureViewport\"}"
 	fname = JSON.parse(send_to_blender(msg))
@@ -273,8 +272,6 @@ function do_inference()
 end
 
 print(string("Connecting to port ", port,"\n",))
-send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/tmp/\"}")
+send_to_blender("{\"cmd\" : \"setRootDir\", \"rootdir\": \"$sample_directory/\"}")
 
 do_inference();
-
-
