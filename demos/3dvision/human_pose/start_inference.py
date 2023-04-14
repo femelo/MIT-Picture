@@ -3,7 +3,6 @@ import os
 import subprocess
 import logging
 from threading import Thread
-from queue import Queue
 import shlex
 import time
 import argparse
@@ -72,62 +71,34 @@ def infer(figure_path, port=5000, debug_server=False):
         raise RuntimeError("Sample directory could not be created or set.")
     
     blender_command = f"blender {HUMAN_BLEND_FILE} -P {BODY_SIM_SERVER_FILE} --port {port}"
-    def run_blender(command, queue, debug_server=False):
+    def run_blender(command, debug_server=False):
         for line in run_process(command):
             if debug_server:
                 print(line, end='', flush=True)
             else:
                 pass
-        queue.put(True)
-    q = Queue(maxsize=1)
-    blender_thread = Thread(target=run_blender, args=(blender_command, q, debug_server))
+        return
+    blender_thread = Thread(target=run_blender, args=(blender_command, debug_server))
     blender_thread.daemon = True
     blender_thread.start()
+    # Wait for blender process to spawn
     time.sleep(0.25)
+    # Get PID
     blender_pid = get_pid("blender")
     logger.info(f"Blender process started with PID {blender_pid}")
+    # Launches Julia process
     logger.info("Launching Julia program...")
     julia_command = f"julia {POSE_PROGRAM_FILE} {figure_path} {sample_directory} {port}"
     julia_process = subprocess.Popen(julia_command, shell=True)
     julia_process.wait()
-    return_code = q.get_nowait()
-    if not return_code:
-        return_code = subprocess.call(
-            shlex.split(f"kill -9 {blender_pid}"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+    return_code = subprocess.call(
+        shlex.split(f"kill -9 {blender_pid}"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
     if return_code:
         logger.info("Inference terminated cleanly.")
     blender_thread.join()
-
-# if len(sys.argv) > 1:
-#     infer(sys.argv[1])
-
-# def thread_run(port):
-#     while True:
-#         files = [
-#             "examples/small/{:02d}.png".format(x) for x in [12, 0, 4, 7, 8, 11]]
-
-#         for f in files:
-#             for i in range(1):
-#                 infer(f, port)
-
-
-# threads = []
-# our_pid = os.getpid()
-# other_pids = set(map(int, subprocess.check_output(
-#     "pgrep -f start_inference.py", shell=True).split(b"\n")[:-1]))
-# other_pids.remove(our_pid)
-
-# if other_pids:
-#     os.system("kill -9 {}".format(" ".join(map(str, other_pids))))
-# os.system("pkill -9 -f \"julia pose\"")
-# os.system("pkill -9 blender")
-# for p in range(5000, 5003):
-#     t = threading.Thread(target=thread_run, args=(p,))
-#     threads.append(t)
-#     t.start()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="Start inference script")
