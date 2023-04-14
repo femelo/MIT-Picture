@@ -189,7 +189,7 @@ end
 	);
 	index += 1;
 
-	global_scale = @trace(Gen.normal(0.98, 0.01), :global_scale);
+	global_scale = @trace(Gen.normal(1.00, 0.1), :global_scale);
 	global_translate_x = @trace(Gen.uniform(-2.599287271499634-1, -2.599287271499634+1), :global_translate_x);
 	global_translate_z = @trace(Gen.uniform(-2.5635364055633545, -2.5635364055633545+0.5), :global_translate_z);
 	global_rotate_z = 0;
@@ -257,7 +257,7 @@ function do_inference()
 		:global_translate_x,
 		:global_translate_z
 	];
-	num_iterations = 100;
+	num_iterations = 200;
 	# Initial trace
 	(tr, _) = Gen.generate(generate_body_pose, (), observation);
 	scores = Vector{Float64}(undef, num_iterations);
