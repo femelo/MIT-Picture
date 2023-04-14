@@ -1,4 +1,4 @@
-# Usage: (1) run start_blender_KTH.sh (initializes blender interface)
+# Usage: (1) run start_blender.sh (initializes blender interface)
 #		 (2) julia pose_program.jl 
 
 # DESCRIPTION: Generative 3D human pose estimation 

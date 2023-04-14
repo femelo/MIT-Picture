@@ -17,13 +17,15 @@ HUMAN_BLEND_FILE = os.path.join(SCRIPT_DIR, "HumanKTH283.blend")
 BODY_SIM_SERVER_FILE = os.path.join(SCRIPT_DIR, "body_simulator_server.py")
 POSE_PROGRAM_FILE = os.path.join(SCRIPT_DIR, "pose_program.jl")
 
+
 def get_pid(name):
     try:
         return subprocess.check_output(["pidof", name]).strip().decode('utf-8')
     except:
         return None
 
-def run_process(command):    
+
+def run_process(command):
     p = subprocess.Popen(
         shlex.split(command),
         stdout=subprocess.PIPE,
@@ -37,6 +39,7 @@ def run_process(command):
         if return_code is not None:
             break
 
+
 def infer(figure_path, port=5000, debug_server=False):
     figure_path = os.path.abspath(os.path.expanduser(figure_path))
     if not os.path.exists(figure_path):
@@ -48,10 +51,10 @@ def infer(figure_path, port=5000, debug_server=False):
     try:
         if not os.path.isdir(samples_base_dir):
             os.makedirs(samples_base_dir)
-            logger.info(f"Directory {samples_base_dir} created.")
+            logger.info("Directory '%s' created.", samples_base_dir)
         if not os.path.isdir(samples_dir):
             os.mkdir(samples_dir)
-            logger.info(f"Subdirectory {samples_dir} created.")
+            logger.info("Subdirectory '%s' created.", samples_dir)
     except:
         pass
 
@@ -59,8 +62,9 @@ def infer(figure_path, port=5000, debug_server=False):
         sample_directory = samples_dir
         if not os.path.isdir(sample_directory):
             os.mkdir(sample_directory)
-            logger.info(f"Subdirectory {sample_directory} created.")
-        logger.info(f"Subdirectory {sample_directory} set as sample directory.")
+            logger.info("Subdirectory '%s' created.", sample_directory)
+        logger.info(
+            "Subdirectory '%s' set as sample directory.", sample_directory)
         output = subprocess.check_output(
             ["cp", figure_path, f"{sample_directory}/original.png"]
         ).strip().decode('utf-8')
@@ -69,8 +73,9 @@ def infer(figure_path, port=5000, debug_server=False):
     except:
         logger.error("Sample directory could not be created or set.")
         raise RuntimeError("Sample directory could not be created or set.")
-    
+
     blender_command = f"blender {HUMAN_BLEND_FILE} -P {BODY_SIM_SERVER_FILE} --port {port}"
+
     def run_blender(command, debug_server=False):
         for line in run_process(command):
             if debug_server:
@@ -78,7 +83,8 @@ def infer(figure_path, port=5000, debug_server=False):
             else:
                 pass
         return
-    blender_thread = Thread(target=run_blender, args=(blender_command, debug_server))
+    blender_thread = Thread(target=run_blender, args=(
+        blender_command, debug_server))
     blender_thread.daemon = True
     blender_thread.start()
     # Wait for blender process to spawn
@@ -100,10 +106,11 @@ def infer(figure_path, port=5000, debug_server=False):
         logger.info("Inference terminated cleanly.")
     blender_thread.join()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="Start inference script")
-    parser.add_argument("--figure-path", "-f", type=str, default="examples/small/test.png")
+    parser.add_argument("--figure-path", "-f", type=str,
+                        default="examples/small/test.png")
     parser.add_argument("--port", "-p", type=int, default=5000)
     args = parser.parse_args()
     infer(figure_path=args.figure_path, port=args.port)
-    
