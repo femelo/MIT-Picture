@@ -98,11 +98,10 @@ function render(commands)
 		send_to_blender(msg)
 	end
 	# Render image
-	#print("Rendering\n")
 	msg = "{\"cmd\" : \"captureViewport\"}"
 	fname = JSON.parse(send_to_blender(msg))
 	rendering = imread(fname, as_gray=true) / 255.0
-	return rendering
+	return (rendering, fname)
 end
 
 ################### PROBABILISTIC CODE ###############
@@ -190,9 +189,12 @@ end
 	index += 1;
 
 	global_scale = @trace(Gen.normal(1.00, 0.1), :global_scale);
-	global_translate_x = @trace(Gen.uniform(-2.599287271499634-1, -2.599287271499634+1), :global_translate_x);
-	global_translate_z = @trace(Gen.uniform(-2.5635364055633545, -2.5635364055633545+0.5), :global_translate_z);
-	global_rotate_z = 0;
+	base_x = -2.599287271499634;
+	base_z = -2.5635364055633545;
+	global_translate_x = @trace(Gen.uniform(base_x - 1, base_x + 1), :global_translate_x);
+	global_translate_z = @trace(Gen.uniform(base_z - 0.5, base_z + 0.5), :global_translate_z);
+	global_rotate_z = @trace(Gen.uniform(-1, 1), :global_rotate_z);
+	# global_rotate_z = 0;
 
 	camera = [global_scale, "None", "None", global_rotate_z, global_translate_x, "None", global_translate_z];
 	commands[index] = Dict(
@@ -201,8 +203,13 @@ end
 		"id" => 0,
 		"M" => camera
 	);
+	
+	return render(commands)
+end
 
-	rendering = render(commands);
+@gen function model()
+	(rendering, fname) = ({*} ~ generate_body_pose());
+
 	edge_map = detect_edges(rendering, sigma=1.0); # edge_map = sk.feature.canny(rendering, sigma=1.0)
 	edges = pyeval(
 		"invert(edge_map[valid_indexes]).astype(float)",
@@ -255,11 +262,12 @@ function do_inference()
 		:heel_right_dz,
 		:global_scale,
 		:global_translate_x,
-		:global_translate_z
+		:global_translate_z,
+		:global_rotate_z
 	];
 	num_iterations = 200;
 	# Initial trace
-	(tr, _) = Gen.generate(generate_body_pose, (), observation);
+	(tr, _) = Gen.generate(model, (), observation);
 	scores = Vector{Float64}(undef, num_iterations);
 	for i = 1:num_iterations
 		@printf("Iteration %03d", i);
