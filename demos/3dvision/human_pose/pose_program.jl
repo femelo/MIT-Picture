@@ -364,14 +364,14 @@ end
 	# Generate observation
 	Y = @trace(Gen.broadcasted_normal(edges .- mu, sigma), :Y);
 
-	return Y
+	return Y, fname
 end
 
 function get_max_range(value, lower_bound, upper_bound)
 	return min(value - lower_bound, upper_bound - value)
 end
 
-@gen function propose(trace, var_name, dispersion_factor=0.25)
+@gen function propose(trace, var_name, dispersion_factor=1.00)
 	var = Symbol(var_name);
 	if PRIOR_PARAMETERS[var_name]["type"] == "uniform"
 		range = get_max_range(
@@ -423,7 +423,9 @@ function do_inference()
 		@time tr = gibbs_kernel(tr, vars);
 		#@time tr = resimulation_kernel(tr, map((var) -> [var], vars));
 		score = Gen.get_score(tr);
+		_, fname = Gen.get_retval(tr);
 		println("Log probability: ", score);
+		@printf("Figure: %s\n", fname);
 		scores[i] = score;
 	end
 	# println("Log mean probability: ", logmeanexp(scores));

@@ -25,6 +25,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 HUMAN_BLEND_FILE = os.path.join(SCRIPT_DIR, "HumanKTH283.blend")
 BODY_SIM_SERVER_FILE = os.path.join(SCRIPT_DIR, "body_simulator_server.py")
 POSE_PROGRAM_FILE = os.path.join(SCRIPT_DIR, "pose_program.jl")
+PROCESSES_QUEUE = Queue(2)
 
 @dataclass
 class VisualizationElements(object):
@@ -50,6 +51,9 @@ class VisualizationElements(object):
         self._axis.set_data(image)
         self._queue.put("update")
 
+    def get_queue(self):
+        return self._queue
+
 
 def get_pid(name):
     """Get PID by name of program."""
@@ -66,10 +70,15 @@ def run_process(command: str, queue: Queue = None):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT
     )
+    PROCESSES_QUEUE.put(p)
     while True:
         # returns None while subprocess is running
-        return_code = p.poll()
-        line = p.stdout.readline().decode('utf-8')
+        try:
+            return_code = p.poll()
+            line = p.stdout.readline().decode('utf-8')
+        except:
+            return_code = None
+            line = None
         yield line
         if return_code is not None:
             if queue is not None:
@@ -78,17 +87,26 @@ def run_process(command: str, queue: Queue = None):
 
 def run_body_simulation_server(
         command: str,
-        sample_directory: str,
-        plot_elements: VisualizationElements = None, 
         debug_server: bool = False
     ) -> None:
     """Routine to run blender and the body simulation server."""
-    show_progress = plot_elements is not None
-    if show_progress:
-        orig_img = cv2.imread(f"{sample_directory}/original.png")
     for line in run_process(command):
         if debug_server:
             print(line, end='', flush=True)
+    logger.info("Body simulation server thread returned.")
+
+
+def run_julia_program(
+        command: str,
+        sample_directory: str,
+        plot_elements: VisualizationElements = None
+    ) -> None:
+    """Routine to run Julia program."""
+    show_progress = plot_elements is not None
+    if show_progress:
+        orig_img = cv2.imread(f"{sample_directory}/original.png")
+    for line in run_process(command, plot_elements.get_queue()):
+        print(line, end='', flush=True)
         if show_progress:
             match = re.search(r'(\w+).png', line)
             if match:
@@ -99,11 +117,8 @@ def run_body_simulation_server(
                     plot_elements.update_image(frame)
                 except:
                     pass
+    logger.info("Julia program terminated.")
 
-def run_julia_program(command: str, queue: Queue) -> None:
-     """Routine to run Julia program."""
-     for line in run_process(command, queue):
-        print(line, end='', flush=True)
 
 def infer(figure_path, port=5000, debug_server=False):
     figure_path = os.path.abspath(os.path.expanduser(figure_path))
@@ -141,7 +156,6 @@ def infer(figure_path, port=5000, debug_server=False):
 
     window = Tk()
     window.protocol("WM_DELETE_WINDOW", window.destroy)
-    process_queue = Queue(1)
     message_queue = Queue()
 
     # Open original figure
@@ -159,26 +173,24 @@ def infer(figure_path, port=5000, debug_server=False):
     command = f"blender {HUMAN_BLEND_FILE} -P {BODY_SIM_SERVER_FILE} --port {port}"
     server_thread = Thread(
         target=run_body_simulation_server,
-        args=(command, sample_directory, visualizaton_elements, debug_server),
+        args=(command, debug_server),
         daemon=True
     )
     server_thread.start()
-
-    # Get PID
-    blender_pid = get_pid("blender")
-    logger.info(f"Body simulation server process started with PID {blender_pid}")
+    logger.info(f"Body simulation server process started.")
+    
     # Launches Julia process
-    logger.info("Launching Julia program...")
     command = f"julia {POSE_PROGRAM_FILE} {figure_path} {sample_directory} {port}"
     program_thread = Thread(
         target=run_julia_program,
-        args=(command, process_queue),
+        args=(command, sample_directory, visualizaton_elements),
         daemon=True
     )
     program_thread.start()
+    logger.info("Julia program process started.")
 
     # Main loop for visualization
-    while process_queue.empty():
+    while True:
         update_signal = message_queue.get(block=True)
         if update_signal == "update":
             visualizaton_elements._fig.canvas.draw()
@@ -186,15 +198,15 @@ def infer(figure_path, port=5000, debug_server=False):
         else:
             break
 
-    return_code = subprocess.call(
-        shlex.split(f"kill -9 {blender_pid}"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    if return_code:
-        logger.info("Inference terminated cleanly.")
+    # Terminate process that are still running
+    while not PROCESSES_QUEUE.empty():
+        p = PROCESSES_QUEUE.get()
+        if p.poll() is None:
+            p.kill()
+
     server_thread.join()
     program_thread.join()
+    logger.info("Inference terminated cleanly.")
 
 
 if __name__ == "__main__":
